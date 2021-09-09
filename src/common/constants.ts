@@ -11,3 +11,7 @@ export enum Services {
   TRACER = 'TRACER',
   METER = 'METER',
 }
+
+export const BUCKET_NAME_MIN_LENGTH_LIMIT = 3;
+
+export const BUCKET_NAME_MAX_LENGTH_LIMIT = 63;
