@@ -5,6 +5,7 @@ import { File as FileEntity } from './file';
 
 @EntityRepository(FileEntity)
 export class FileRepository extends Repository<FileEntity> implements IFileRepository {
+  // TODO: remove if not needed
   public async findFilesOfReplica(replicaId: string): Promise<File[]> {
     return this.find({ where: { replicaId } });
   }

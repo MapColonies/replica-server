@@ -110,7 +110,7 @@ paths:
               $ref: '#/components/schemas/baseReplica'
       responses:
         '200':
-          description: updated
+          description: Updated
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -128,7 +128,7 @@ paths:
         - ApiKeyAuth: []
       responses:
         '200':
-          description: deleted
+          description: Deleted
           content:
             application/json:
               schema:
@@ -271,8 +271,9 @@ components:
       name: X-API-KEY
   parameters:
     filterOptions:
-      name: param
+      name: filter
       in: query
+      required: true
       schema:
         type: object
         properties:
@@ -286,7 +287,7 @@ components:
             $ref: '#/components/schemas/syncId'
           is_hidden:
             type: boolean
-          from:
+          exclusive_from:
             $ref: '#/components/schemas/replicaDate'
           to:
             $ref: '#/components/schemas/replicaDate'

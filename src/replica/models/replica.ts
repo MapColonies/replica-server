@@ -1,11 +1,6 @@
 import { GeometryType, ReplicaType } from '../../common/enums';
 import { File } from './file';
 
-// TODO: remove if only used once
-export type ReplicaMetadata = Partial<Omit<Replica, 'id'>>;
-
-export type ReplicaWithFiles = Replica & { files: File[] };
-
 export interface Replica {
   id: string;
 
@@ -23,6 +18,10 @@ export interface Replica {
 
   bucketName: string;
 }
+
+export type ReplicaMetadata = Partial<Omit<Replica, 'id'>>;
+
+export type ReplicaWithFiles = Replica & { files: File[] };
 
 export interface ReplicaResponse extends Omit<Replica, 'id' | 'isHidden' | 'bucketName' | 'syncId'> {
   url: string[];

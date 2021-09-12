@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import { GeometryType, ReplicaType } from '../../common/enums';
 import { SortFilter } from '../../common/types';
 
@@ -8,20 +7,13 @@ export interface BaseReplicaFilter {
   layerId: number;
 }
 
-// TODO: with PickRename
-export interface BaseReplicaFilterQueryParams {
-  replica_type: ReplicaType;
-  geometry_type: GeometryType;
-  layer_id: number;
-}
-
-export interface ReplicaFilter extends BaseReplicaFilter {
-  from: Date;
-  to: Date;
+export interface PublicReplicaFilter extends BaseReplicaFilter {
+  exclusiveFrom?: Date;
+  to?: Date;
   sort?: SortFilter;
 }
 
-export interface ReplicasQueryFilter extends Partial<Omit<ReplicaFilter, 'sort'>> {
+export interface PrivateReplicaFilter extends Partial<Omit<PublicReplicaFilter, 'sort'>> {
   syncId?: string;
   isHidden?: boolean;
 }

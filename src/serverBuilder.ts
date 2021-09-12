@@ -10,7 +10,7 @@ import httpLogger from '@map-colonies/express-access-log-middleware';
 import { Services } from './common/constants';
 import { IConfig } from './common/interfaces';
 import { REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
-import { ANOTHER_RESOURECE_ROUTER_SYMBOL } from './anotherResource/routes/anotherResourceRouter';
+import { LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
 
 @injectable()
 export class ServerBuilder {
@@ -20,7 +20,7 @@ export class ServerBuilder {
     @inject(Services.CONFIG) private readonly config: IConfig,
     @inject(Services.LOGGER) private readonly logger: Logger,
     @inject(REPLICA_ROUTER_SYMBOL) private readonly replicaRouter: Router,
-    @inject(ANOTHER_RESOURECE_ROUTER_SYMBOL) private readonly anotherResourceRouter: Router
+    @inject(LAYER_ROUTER_SYMBOL) private readonly layerRouter: Router
   ) {
     this.serverInstance = express();
   }
@@ -41,7 +41,7 @@ export class ServerBuilder {
 
   private buildRoutes(): void {
     this.serverInstance.use('/replica', this.replicaRouter);
-    this.serverInstance.use('/anotherResource', this.anotherResourceRouter);
+    this.serverInstance.use('/layers', this.layerRouter);
     this.buildDocsRoutes();
   }
 

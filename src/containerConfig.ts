@@ -9,13 +9,15 @@ import { Services } from './common/constants';
 import { tracing } from './common/tracing';
 import { replicaRouterFactory, REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
 import { InjectionObject, registerDependencies } from './common/dependencyRegistration';
-import { anotherResourceRouterFactory, ANOTHER_RESOURECE_ROUTER_SYMBOL } from './anotherResource/routes/anotherResourceRouter';
+import { layerRouterFactory, LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
 import { IReplicaRepository, REPLICA_REPOSITORY_SYMBOL } from './replica/DAL/IReplicaRepository';
 import { ReplicaRepository } from './replica/DAL/typeorm/replicaRepository';
 import { DbConfig } from './common/interfaces';
 import { getDbHealthCheckFunction, initConnection } from './common/db';
 import { FILE_REPOSITORY_SYMBOL, IFileRepository } from './replica/DAL/IFileRepository';
 import { FileRepository } from './replica/DAL/typeorm/fileRepository';
+import { ILayerRepository, LAYER_REPOSITORY_SYMBOL } from './layer/DAL/ILayerRepository';
+import { LayerRepository } from './layer/DAL/typeorm/layerRepository';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
@@ -63,8 +65,16 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
         },
       },
     },
+    {
+      token: LAYER_REPOSITORY_SYMBOL,
+      provider: {
+        useFactory: (container): ILayerRepository => {
+          return container.resolve<Connection>(Connection).getCustomRepository(LayerRepository);
+        },
+      },
+    },
     { token: REPLICA_ROUTER_SYMBOL, provider: { useFactory: replicaRouterFactory } },
-    { token: ANOTHER_RESOURECE_ROUTER_SYMBOL, provider: { useFactory: anotherResourceRouterFactory } },
+    { token: LAYER_ROUTER_SYMBOL, provider: { useFactory: layerRouterFactory } },
     { token: 'healthcheck', provider: { useFactory: (container): unknown => getDbHealthCheckFunction(container.resolve<Connection>(Connection)) } },
     {
       token: 'onSignal',

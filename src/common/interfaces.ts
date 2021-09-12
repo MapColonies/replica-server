@@ -20,7 +20,3 @@ export interface OpenApiConfig {
   jsonPath: string;
   uiPath: string;
 }
-
-export interface GeneralResponse {
-  message: string;
-}
