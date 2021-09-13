@@ -12,7 +12,7 @@ import { InjectionObject, registerDependencies } from './common/dependencyRegist
 import { layerRouterFactory, LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
 import { IReplicaRepository, REPLICA_REPOSITORY_SYMBOL } from './replica/DAL/IReplicaRepository';
 import { ReplicaRepository } from './replica/DAL/typeorm/replicaRepository';
-import { DbConfig } from './common/interfaces';
+import { DbConfig, IObjectStorageConfig } from './common/interfaces';
 import { getDbHealthCheckFunction, initConnection } from './common/db';
 import { FILE_REPOSITORY_SYMBOL, IFileRepository } from './replica/DAL/IFileRepository';
 import { FileRepository } from './replica/DAL/typeorm/fileRepository';
@@ -35,6 +35,8 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
   const metrics = new Metrics('app');
   const meter = metrics.start();
 
+  const objectStorageConfig = config.get<IObjectStorageConfig>('objectStorage');
+
   tracing.start();
   const tracer = trace.getTracer('app');
 
@@ -43,6 +45,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     { token: Services.LOGGER, provider: { useValue: logger } },
     { token: Services.TRACER, provider: { useValue: tracer } },
     { token: Services.METER, provider: { useValue: meter } },
+    { token: Services.OBJECT_STORAGE, provider: { useValue: objectStorageConfig } },
     {
       token: Connection,
       provider: {
@@ -81,7 +84,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       provider: {
         useValue: {
           useValue: async (): Promise<void> => {
-            await Promise.all([tracing.stop(), metrics.stop()]);
+            await Promise.all([tracing.stop(), metrics.stop(), connection.close()]);
           },
         },
       },

@@ -1,6 +1,8 @@
-import { HealthCheck } from '@godaddy/terminus';
 import { readFileSync } from 'fs';
+import { HealthCheck } from '@godaddy/terminus';
 import { Connection, ConnectionOptions, createConnection } from 'typeorm';
+import { Layer } from '../../layer/DAL/typeorm/layer';
+import { File } from '../../replica/DAL/typeorm/file';
 
 import { Replica } from '../../replica/DAL/typeorm/replica';
 import { DbConfig } from '../interfaces';
@@ -10,7 +12,7 @@ let connectionSingleton: Connection | undefined;
 
 const DB_TIMEOUT = 5000;
 
-export const DB_ENTITIES = [Replica];
+export const DB_ENTITIES = [Replica, File, Layer];
 
 export const createConnectionOptions = (dbConfig: DbConfig): ConnectionOptions => {
   const { enableSslAuth, sslPaths, ...connectionOptions } = dbConfig;

@@ -14,6 +14,5 @@ export interface PublicReplicaFilter extends BaseReplicaFilter {
 }
 
 export interface PrivateReplicaFilter extends Partial<Omit<PublicReplicaFilter, 'sort'>> {
-  syncId?: string;
   isHidden?: boolean;
 }

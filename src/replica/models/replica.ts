@@ -2,9 +2,7 @@ import { GeometryType, ReplicaType } from '../../common/enums';
 import { File } from './file';
 
 export interface Replica {
-  id: string;
-
-  syncId: string;
+  replicaId: string;
 
   layerId: number;
 
@@ -19,10 +17,10 @@ export interface Replica {
   bucketName: string;
 }
 
-export type ReplicaMetadata = Partial<Omit<Replica, 'id'>>;
+export type ReplicaMetadata = Partial<Omit<Replica, 'replicaId'>>;
 
 export type ReplicaWithFiles = Replica & { files: File[] };
 
-export interface ReplicaResponse extends Omit<Replica, 'id' | 'isHidden' | 'bucketName' | 'syncId'> {
+export interface ReplicaResponse extends Omit<Replica, 'replicaId' | 'isHidden' | 'bucketName'> {
   url: string[];
 }

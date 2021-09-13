@@ -95,7 +95,7 @@ paths:
         5XX:
           $ref: '#/components/responses/UnexpectedError'
     patch:
-      operationId: patchReplica
+      operationId: patchReplicas
       tags:
         - private
       summary: Update all replicas based on condition
@@ -134,7 +134,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/baseReplica'
+                  $ref: '#/components/schemas/replica'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -205,6 +205,65 @@ paths:
                 $ref: '#/components/schemas/replica'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      operationId: patchReplicaById
+      tags:
+        - private
+      summary: update replica by id
+      parameters:
+        - in: path
+          name: replicaId
+          schema:
+            $ref: '#/components/schemas/replicaId'
+          required: true
+          description: id of the replica to patch
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/baseReplica'
+      responses:
+        '200':
+          description: Updated
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      operationId: deleteReplicaById
+      tags:
+        - private
+      summary: delete replica by id
+      parameters:
+        - in: path
+          name: replicaId
+          schema:
+            $ref: '#/components/schemas/replicaId'
+          required: true
+          description: id of the replica to delete
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/replica'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         5XX:
@@ -283,8 +342,8 @@ components:
             $ref: '#/components/schemas/geometryType'
           layer_id:
             $ref: '#/components/schemas/layerId'
-          sync_id:
-            $ref: '#/components/schemas/syncId'
+          # replica_id:
+          #   $ref: '#/components/schemas/replicaId'
           is_hidden:
             type: boolean
           exclusive_from:
@@ -352,9 +411,6 @@ components:
     replicaId:
       type: string
       format: uuid
-    syncId:
-      type: string
-      format: uuid
     layerId:
       type: number
     layerName:
@@ -387,10 +443,6 @@ components:
           writeOnly: true
         replicaType:
           $ref: '#/components/schemas/replicaType'
-        syncId:
-          allOf:
-            - writeOnly: true
-            - $ref: '#/components/schemas/syncId'
         url:
           type: array
           items:
@@ -402,7 +454,7 @@ components:
         - $ref: '#/components/schemas/baseReplica'
         - type: object
           properties:
-            id:
+            replicaId:
               allOf:
                 - writeOnly: true
                 - $ref: '#/components/schemas/replicaId'

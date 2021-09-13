@@ -20,3 +20,10 @@ export interface OpenApiConfig {
   jsonPath: string;
   uiPath: string;
 }
+
+export interface IObjectStorageConfig {
+  protocol: string;
+  host: string;
+  projectId?: string;
+  port: string;
+}

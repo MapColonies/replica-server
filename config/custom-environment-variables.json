@@ -58,5 +58,14 @@
       "cert": "DB_CERT_PATH"
     },
     "database": "DB_NAME"
+  },
+  "objectStorage": {
+    "protocol": "OBJECT_STORAGE_PROTOCOL",
+    "host": "OBJECT_STORAGE_HOST",
+    "projectId": "OBJECT_STORAGE_PROJECT_ID",
+    "port": {
+      "__name": "OBJECT_STORAGE_PORT",
+      "__format": "number"
+    }
   }
 }

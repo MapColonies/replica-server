@@ -1,5 +1,4 @@
-import { Column, Entity, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
-
+import { Column, Entity, CreateDateColumn, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { Replica } from './replica';
 
 @Entity()
@@ -7,8 +6,8 @@ export class File {
   @PrimaryGeneratedColumn('uuid', { name: 'file_id' })
   public fileId!: string;
 
-  @ManyToOne(() => Replica, (replica) => replica.files)
-  @JoinColumn({ name: 'replica_id' })
+  @ManyToOne(() => Replica, (replica) => replica.files, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'replica_id', referencedColumnName: 'replicaId' })
   public replica!: Replica;
 
   @Column({ name: 'replica_id', type: 'uuid' })
@@ -16,7 +15,4 @@ export class File {
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  public updatedAt!: Date;
 }

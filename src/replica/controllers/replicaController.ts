@@ -4,13 +4,13 @@ import { RequestHandler } from 'express';
 import httpStatus, { StatusCodes } from 'http-status-codes';
 import { injectable, inject } from 'tsyringe';
 import { SnakeCasedProperties } from 'type-fest';
-
 import { Services } from '../../common/constants';
 import { HttpError } from '../../common/errors';
 import { ReplicaAlreadyExistsError, ReplicaNotFoundError } from '../models/errors';
 import { Replica, ReplicaMetadata, ReplicaResponse } from '../models/replica';
 import { ReplicaManager } from '../models/replicaManager';
 import { BaseReplicaFilter, PrivateReplicaFilter, PublicReplicaFilter } from '../models/replicaFilter';
+import { convertObjectToCamelCase } from '../../common/utils';
 
 type BaseReplicaFilterQueryParams = SnakeCasedProperties<BaseReplicaFilter>;
 type PublicReplicaFilterQueryParams = SnakeCasedProperties<PublicReplicaFilter>;
@@ -21,7 +21,9 @@ type GetLatestReplicaHandler = RequestHandler<undefined, ReplicaResponse, undefi
 type GetReplicasHandler = RequestHandler<undefined, ReplicaResponse[], undefined, PublicReplicaFilterQueryParams>;
 type PostReplicaHandler = RequestHandler<undefined, undefined, Replica>;
 type PostFileHandler = RequestHandler<{ replicaId: string }>;
+type PatchReplicaHandler = RequestHandler<{ replicaId: string }, undefined, ReplicaMetadata>;
 type PatchReplicasHandler = RequestHandler<undefined, undefined, ReplicaMetadata, { filter: PrivateReplicaFilterQueryParams }>;
+type DeleteReplicaHandler = RequestHandler<{ replicaId: string }, ReplicaResponse>;
 type DeleteReplicasHandler = RequestHandler<undefined, ReplicaResponse[], undefined, { filter: PrivateReplicaFilterQueryParams }>;
 
 @injectable()
@@ -42,8 +44,7 @@ export class ReplicaController {
 
   public getLatestReplica: GetLatestReplicaHandler = async (req, res, next) => {
     try {
-      const { replica_type, geometry_type, layer_id } = req.query;
-      const filter: BaseReplicaFilter = { replicaType: replica_type, geometryType: geometry_type, layerId: layer_id };
+      const filter: BaseReplicaFilter = convertObjectToCamelCase(req.query);
       const replica = await this.manager.getLatestReplica(filter);
       return res.status(httpStatus.OK).json(replica);
     } catch (error) {
@@ -56,15 +57,7 @@ export class ReplicaController {
 
   public getReplicas: GetReplicasHandler = async (req, res, next) => {
     try {
-      const { replica_type, geometry_type, layer_id, exclusive_from, to, sort } = req.query;
-      const filter: PublicReplicaFilter = {
-        replicaType: replica_type,
-        geometryType: geometry_type,
-        layerId: layer_id,
-        exclusiveFrom: exclusive_from,
-        to: to,
-        sort: sort,
-      };
+      const filter: PublicReplicaFilter = convertObjectToCamelCase(req.query);
       const replicas = await this.manager.getReplicas(filter);
       return res.status(httpStatus.OK).json(replicas);
     } catch (error) {
@@ -87,6 +80,18 @@ export class ReplicaController {
   public postFile: PostFileHandler = async (req, res, next) => {
     try {
       await this.manager.createFileOnReplica(req.params.replicaId);
+      return res.status(httpStatus.CREATED).json();
+    } catch (error) {
+      if (error instanceof ReplicaNotFoundError) {
+        (error as HttpError).status = StatusCodes.NOT_FOUND;
+      }
+      return next(error);
+    }
+  };
+
+  public patchReplica: PatchReplicaHandler = async (req, res, next) => {
+    try {
+      await this.manager.updateReplica(req.params.replicaId, req.body);
       return res.status(httpStatus.OK).json();
     } catch (error) {
       if (error instanceof ReplicaNotFoundError) {
@@ -98,16 +103,7 @@ export class ReplicaController {
 
   public patchReplicas: PatchReplicasHandler = async (req, res, next) => {
     try {
-      const { replica_type, geometry_type, layer_id, sync_id, is_hidden, exclusive_from, to } = req.query.filter;
-      const filter: PrivateReplicaFilter = {
-        replicaType: replica_type,
-        geometryType: geometry_type,
-        layerId: layer_id,
-        syncId: sync_id,
-        isHidden: is_hidden,
-        exclusiveFrom: exclusive_from,
-        to: to,
-      };
+      const filter: PrivateReplicaFilter = convertObjectToCamelCase(req.query.filter);
       await this.manager.updateReplicas(filter, req.body);
       return res.status(httpStatus.OK).json();
     } catch (error) {
@@ -115,18 +111,21 @@ export class ReplicaController {
     }
   };
 
+  public deleteReplica: DeleteReplicaHandler = async (req, res, next) => {
+    try {
+      const deletedReplica = await this.manager.deleteReplica(req.params.replicaId);
+      return res.status(httpStatus.OK).json(deletedReplica);
+    } catch (error) {
+      if (error instanceof ReplicaNotFoundError) {
+        (error as HttpError).status = StatusCodes.NOT_FOUND;
+      }
+      return next(error);
+    }
+  };
+
   public deleteReplicas: DeleteReplicasHandler = async (req, res, next) => {
     try {
-      const { replica_type, geometry_type, layer_id, sync_id, is_hidden, exclusive_from, to } = req.query.filter;
-      const filter: PrivateReplicaFilter = {
-        replicaType: replica_type,
-        geometryType: geometry_type,
-        layerId: layer_id,
-        syncId: sync_id,
-        isHidden: is_hidden,
-        exclusiveFrom: exclusive_from,
-        to: to,
-      };
+      const filter: PrivateReplicaFilter = convertObjectToCamelCase(req.query.filter);
       const deletedReplicas = await this.manager.deleteReplicas(filter);
       return res.status(httpStatus.OK).json(deletedReplicas);
     } catch (error) {

@@ -1,6 +1,6 @@
-{{- $chartName := include "ts-server-boilerplate.name" . -}}
-{{- $tracingUrl := include "ts-server-boilerplate.tracingUrl" . -}}
-{{- $metricsUrl := include "ts-server-boilerplate.metricsUrl" . -}}
+{{- $chartName := include "replica-server.name" . -}}
+{{- $tracingUrl := include "replica-server.tracingUrl" . -}}
+{{- $metricsUrl := include "replica-server.metricsUrl" . -}}
 {{- if .Values.enabled -}}
 apiVersion: v1
 kind: ConfigMap
@@ -19,5 +19,22 @@ data:
   TELEMETRY_METRICS_ENABLED: 'true'
   TELEMETRY_METRICS_URL: {{ $metricsUrl }}
   {{ end }}
-  LOG_LEVEL: {{ .Values.env.logLevel | quote }}
+  {{- with .Values.dbConfig }}
+  DB_HOST: {{ .host }}
+  DB_NAME: {{ .database }}
+  {{- end -}}
+  {{- if .Values.dbConfig.sslAuth.enabled }}
+  DB_ENABLE_SSL_AUTH: "true"
+  DB_CERT_PATH: /tmp/certs/{{ .Values.dbConfig.sslAuth.certFileName }}
+  DB_KEY_PATH: /tmp/certs/{{ .Values.dbConfig.sslAuth.keyFileName }}
+  DB_CA_PATH: /tmp/certs/{{ .Values.dbConfig.sslAuth.caFileName }}
+  {{- else }}
+  DB_ENABLE_SSL_AUTH: "false"
+  {{- end }}
+  OBJECT_STORAGE_PROTOCOL: {{ .Values.objectStorageConfig.protocol }}
+  OBJECT_STORAGE_HOST: {{ .Values.objectStorageConfig.host }}
+  OBJECT_STORAGE_PORT: {{ .Values.objectStorageConfig.port  | quote }}
+  {{- if .Values.objectStorageConfig.projectId.enabled }}
+  OBJECT_STORAGE_PROJECT_ID: {{ .Values.objectStorageConfig.projectId.value }}
+  {{- end }}
 {{- end }}

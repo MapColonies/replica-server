@@ -12,7 +12,9 @@ const replicaRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   router.post('/', controller.postReplica);
   router.post('/:replicaId/file', controller.postFile);
   router.patch('/', controller.patchReplicas);
+  router.patch('/:replicaId', controller.patchReplica);
   router.delete('/', controller.deleteReplicas);
+  router.delete('/:replicaId', controller.deleteReplica);
 
   return router;
 };
