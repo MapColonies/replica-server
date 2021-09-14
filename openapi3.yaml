@@ -107,7 +107,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/baseReplica'
+              $ref: '#/components/schemas/replicaMetadata'
       responses:
         '200':
           description: Updated
@@ -227,7 +227,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/baseReplica'
+              $ref: '#/components/schemas/replicaMetadata'
       responses:
         '200':
           description: Updated
@@ -283,6 +283,14 @@ paths:
           description: id of the replica to create file for
       security:
         - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileId:
+                  $ref: '#/components/schemas/fileId'
       responses:
         '201':
           description: Created
@@ -290,6 +298,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         5XX:
           $ref: '#/components/responses/UnexpectedError'
   /layers:
@@ -318,8 +330,8 @@ paths:
                       type: array
                       items:
                         $ref: '#/components/schemas/geometryType'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         5XX:
           $ref: '#/components/responses/UnexpectedError'
 components:
@@ -342,10 +354,8 @@ components:
             $ref: '#/components/schemas/geometryType'
           layer_id:
             $ref: '#/components/schemas/layerId'
-          # replica_id:
-          #   $ref: '#/components/schemas/replicaId'
           is_hidden:
-            type: boolean
+            $ref: '#/components/schemas/isHidden'
           exclusive_from:
             $ref: '#/components/schemas/replicaDate'
           to:
@@ -411,10 +421,15 @@ components:
     replicaId:
       type: string
       format: uuid
+    fileId:
+      type: string
+      format: uuid
     layerId:
       type: number
     layerName:
       type: string
+    isHidden:
+      type: boolean
     error:
       type: object
       required:
@@ -432,10 +447,6 @@ components:
           format: int32
         geometryType:
           $ref: '#/components/schemas/geometryType'
-        isHidden:
-          type: boolean
-          writeOnly: true
-          default: true
         bucketName:
           type: string
           minLength: 3
@@ -449,6 +460,14 @@ components:
             type: string
             example: http://map.co/file.zip
           readOnly: true
+    replicaMetadata:
+      allOf:
+        - $ref: '#/components/schemas/baseReplica'
+        - type: object
+          properties:
+            isHidden:
+              allOf:
+                - $ref: '#/components/schemas/isHidden'
     replica:
       allOf:
         - $ref: '#/components/schemas/baseReplica'

@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Logger } from '@map-colonies/js-logger';
 import { inject, injectable } from 'tsyringe';
 import { Services } from '../../common/constants';
@@ -5,8 +6,8 @@ import { IObjectStorageConfig } from '../../common/interfaces';
 import { FILE_REPOSITORY_SYMBOL, IFileRepository } from '../DAL/IFileRepository';
 import { IReplicaRepository, REPLICA_REPOSITORY_SYMBOL } from '../DAL/IReplicaRepository';
 import { isStringUndefinedOrEmpty } from '../../common/utils';
-import { ReplicaNotFoundError, ReplicaAlreadyExistsError } from './errors';
-import { Replica, ReplicaMetadata, ReplicaResponse, ReplicaWithFiles } from './replica';
+import { ReplicaNotFoundError, ReplicaAlreadyExistsError, FileAlreadyExistsError } from './errors';
+import { ReplicaCreateBody, ReplicaMetadata, ReplicaResponse, ReplicaWithFiles } from './replica';
 import { BaseReplicaFilter, PrivateReplicaFilter, PublicReplicaFilter } from './replicaFilter';
 
 @injectable()
@@ -19,7 +20,8 @@ export class ReplicaManager {
     @inject(Services.LOGGER) private readonly logger: Logger,
     @inject(Services.OBJECT_STORAGE) private readonly objectStorageConfig: IObjectStorageConfig
   ) {
-    this.urlHeader = this.getUrlHeader();
+    const { protocol, host, port } = this.objectStorageConfig;
+    this.urlHeader = `${protocol}://${host}:${port}`;
   }
 
   public async getReplicaById(replicaId: string): Promise<ReplicaResponse> {
@@ -34,7 +36,7 @@ export class ReplicaManager {
       layerId,
       geometryType,
       timestamp,
-      url: urls,
+      urls,
     };
   }
 
@@ -51,7 +53,7 @@ export class ReplicaManager {
       layerId,
       geometryType,
       timestamp,
-      url: urls,
+      urls,
     };
   }
 
@@ -65,12 +67,12 @@ export class ReplicaManager {
         layerId,
         geometryType,
         timestamp,
-        url: urls,
+        urls,
       };
     });
   }
 
-  public async createReplica(replica: Replica): Promise<void> {
+  public async createReplica(replica: ReplicaCreateBody): Promise<void> {
     const existingReplica = await this.replicaRepository.findOneReplica(replica.replicaId);
     if (existingReplica) {
       throw new ReplicaAlreadyExistsError(`replica with id ${replica.replicaId} already exists`);
@@ -78,12 +80,16 @@ export class ReplicaManager {
     await this.replicaRepository.createReplica({ ...replica, isHidden: true });
   }
 
-  public async createFileOnReplica(replicaId: string): Promise<void> {
+  public async createFileOnReplica(replicaId: string, fileId: string): Promise<void> {
     const replica = await this.replicaRepository.findOneReplica(replicaId);
     if (replica === undefined) {
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
-    await this.fileRepository.createFileOnReplica(replicaId);
+    const existingFile = await this.fileRepository.findOneFile(fileId);
+    if (existingFile) {
+      throw new FileAlreadyExistsError(`file with id ${fileId} already exists`);
+    }
+    await this.fileRepository.createFileOnReplica(replicaId, fileId);
   }
 
   public async updateReplica(replicaId: string, updatedMetadata: ReplicaMetadata): Promise<void> {
@@ -91,7 +97,7 @@ export class ReplicaManager {
     if (replica === undefined) {
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
-    await this.replicaRepository.updateReplica(replicaId, updatedMetadata);
+    await this.replicaRepository.updateOneReplica(replicaId, updatedMetadata);
   }
 
   public async updateReplicas(filter: PrivateReplicaFilter, updatedMetadata: ReplicaMetadata): Promise<void> {
@@ -99,7 +105,7 @@ export class ReplicaManager {
   }
 
   public async deleteReplica(replicaId: string): Promise<ReplicaResponse> {
-    const deletedReplica = await this.replicaRepository.deleteReplica(replicaId);
+    const deletedReplica = await this.replicaRepository.deleteOneReplica(replicaId);
     if (deletedReplica === undefined) {
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
@@ -110,7 +116,7 @@ export class ReplicaManager {
       layerId,
       geometryType,
       timestamp,
-      url: urls,
+      urls,
     };
   }
 
@@ -124,14 +130,9 @@ export class ReplicaManager {
         layerId,
         geometryType,
         timestamp,
-        url: urls,
+        urls,
       };
     });
-  }
-
-  private getUrlHeader(): string {
-    const { protocol, host, port } = this.objectStorageConfig;
-    return `${protocol}://${host}:${port}`;
   }
 
   private getReplicaUrls(replicaWithFiles: ReplicaWithFiles): string[] {
@@ -141,6 +142,9 @@ export class ReplicaManager {
     if (!isStringUndefinedOrEmpty(projectId)) {
       bucketOrProjectIdWithBucket = `${projectId}:${bucketName}`;
     }
-    return files.map((file) => `${this.urlHeader}/${bucketOrProjectIdWithBucket}/${layerId}/${geometryType}/${file.fileId}`);
+    return files.map((file) => {
+      const filePath = join(bucketOrProjectIdWithBucket, layerId.toString(), geometryType, file.fileId);
+      return `${this.urlHeader}/${filePath}`;
+    });
   }
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */ // query params are in snake case
 import { Logger } from '@map-colonies/js-logger';
 import { RequestHandler } from 'express';
 import httpStatus, { StatusCodes } from 'http-status-codes';
@@ -6,8 +5,8 @@ import { injectable, inject } from 'tsyringe';
 import { SnakeCasedProperties } from 'type-fest';
 import { Services } from '../../common/constants';
 import { HttpError } from '../../common/errors';
-import { ReplicaAlreadyExistsError, ReplicaNotFoundError } from '../models/errors';
-import { Replica, ReplicaMetadata, ReplicaResponse } from '../models/replica';
+import { FileAlreadyExistsError, ReplicaAlreadyExistsError, ReplicaNotFoundError } from '../models/errors';
+import { ReplicaCreateBody, ReplicaMetadata, ReplicaResponse } from '../models/replica';
 import { ReplicaManager } from '../models/replicaManager';
 import { BaseReplicaFilter, PrivateReplicaFilter, PublicReplicaFilter } from '../models/replicaFilter';
 import { convertObjectToCamelCase } from '../../common/utils';
@@ -19,8 +18,8 @@ type PrivateReplicaFilterQueryParams = SnakeCasedProperties<PrivateReplicaFilter
 type GetReplicaByIdHandler = RequestHandler<{ replicaId: string }, ReplicaResponse>;
 type GetLatestReplicaHandler = RequestHandler<undefined, ReplicaResponse, undefined, BaseReplicaFilterQueryParams>;
 type GetReplicasHandler = RequestHandler<undefined, ReplicaResponse[], undefined, PublicReplicaFilterQueryParams>;
-type PostReplicaHandler = RequestHandler<undefined, undefined, Replica>;
-type PostFileHandler = RequestHandler<{ replicaId: string }>;
+type PostReplicaHandler = RequestHandler<undefined, undefined, ReplicaCreateBody>;
+type PostFileHandler = RequestHandler<{ replicaId: string }, undefined, { fileId: string }>;
 type PatchReplicaHandler = RequestHandler<{ replicaId: string }, undefined, ReplicaMetadata>;
 type PatchReplicasHandler = RequestHandler<undefined, undefined, ReplicaMetadata, { filter: PrivateReplicaFilterQueryParams }>;
 type DeleteReplicaHandler = RequestHandler<{ replicaId: string }, ReplicaResponse>;
@@ -79,11 +78,14 @@ export class ReplicaController {
 
   public postFile: PostFileHandler = async (req, res, next) => {
     try {
-      await this.manager.createFileOnReplica(req.params.replicaId);
+      await this.manager.createFileOnReplica(req.params.replicaId, req.body.fileId);
       return res.status(httpStatus.CREATED).json();
     } catch (error) {
       if (error instanceof ReplicaNotFoundError) {
         (error as HttpError).status = StatusCodes.NOT_FOUND;
+      }
+      if (error instanceof FileAlreadyExistsError) {
+        (error as HttpError).status = StatusCodes.CONFLICT;
       }
       return next(error);
     }

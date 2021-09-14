@@ -1,10 +1,11 @@
 import { Column, Entity, PrimaryColumn, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
 import { BUCKET_NAME_MAX_LENGTH_LIMIT } from '../../../common/constants';
 import { GeometryType, ReplicaType } from '../../../common/enums';
+import { Replica as IReplica } from '../../models/replica';
 import { File } from './file';
 
 @Entity()
-export class Replica {
+export class Replica implements IReplica {
   @PrimaryColumn({ name: 'replica_id', type: 'uuid' })
   public replicaId!: string;
 

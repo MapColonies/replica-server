@@ -32,9 +32,7 @@ export const initConnection = async (dbConfig: DbConfig): Promise<Connection> =>
 
 export const getDbHealthCheckFunction = (connection: Connection): HealthCheck => {
   return async (): Promise<void> => {
-    const check = connection.query('SELECT 1').then(() => {
-      return;
-    });
+    const check = connection.query('SELECT 1');
     return promiseTimeout<void>(DB_TIMEOUT, check);
   };
 };

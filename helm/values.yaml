@@ -18,9 +18,9 @@ cloudProvider:
   dockerRegistryUrl: my-registry-url.io
 
 image:
-  repository: ts-server-boilerplate
+  repository: replica-server
   # Overrides the image tag whose default is the chart appVersion.
-  # tag: "v1.0.0"
+  tag: "v0.0.1"
 
 resources:
   enabled: false

@@ -57,7 +57,7 @@ export class ReplicaRepository extends Repository<ReplicaEntity> implements IRep
     await this.insert(replica);
   }
 
-  public async updateReplica(replicaId: string, updatedMetadata: ReplicaMetadata): Promise<void> {
+  public async updateOneReplica(replicaId: string, updatedMetadata: ReplicaMetadata): Promise<void> {
     await this.update(replicaId, updatedMetadata);
   }
 
@@ -74,7 +74,7 @@ export class ReplicaRepository extends Repository<ReplicaEntity> implements IRep
     await this.update(whereConditions, updatedMetadata);
   }
 
-  public async deleteReplica(replicaId: string): Promise<ReplicaWithFiles | undefined> {
+  public async deleteOneReplica(replicaId: string): Promise<ReplicaWithFiles | undefined> {
     const deletedReplicas = await this.manager.connection.transaction(async (transactionalEntityManager) => {
       const replicaToDelete = await transactionalEntityManager.findOne(ReplicaEntity, {
         where: { replicaId },

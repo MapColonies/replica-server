@@ -48,7 +48,7 @@ export class initialMigration1631545006431 implements MigrationInterface {
         `);
     await queryRunner.query(`
             CREATE TABLE "replica_server"."file" (
-                "file_id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+                "file_id" uuid NOT NULL,
                 "replica_id" uuid NOT NULL,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_37d2332c95c19b4882bdab5e261" PRIMARY KEY ("file_id")

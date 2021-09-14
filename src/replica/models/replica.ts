@@ -19,8 +19,10 @@ export interface Replica {
 
 export type ReplicaMetadata = Partial<Omit<Replica, 'replicaId'>>;
 
+export type ReplicaCreateBody = Omit<Replica, 'isHidden'>;
+
 export type ReplicaWithFiles = Replica & { files: File[] };
 
 export interface ReplicaResponse extends Omit<Replica, 'replicaId' | 'isHidden' | 'bucketName'> {
-  url: string[];
+  urls: string[];
 }

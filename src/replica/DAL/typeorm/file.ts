@@ -1,9 +1,10 @@
-import { Column, Entity, CreateDateColumn, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, CreateDateColumn, ManyToOne, JoinColumn, PrimaryColumn } from 'typeorm';
+import { File as IFile } from '../../models/file';
 import { Replica } from './replica';
 
 @Entity()
-export class File {
-  @PrimaryGeneratedColumn('uuid', { name: 'file_id' })
+export class File implements IFile {
+  @PrimaryColumn('uuid', { name: 'file_id' })
   public fileId!: string;
 
   @ManyToOne(() => Replica, (replica) => replica.files, { onDelete: 'CASCADE' })

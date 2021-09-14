@@ -1,5 +1,7 @@
-export const FILE_REPOSITORY_SYMBOL = Symbol('FileRepository');
+import { File } from '../models/file';
 
+export const FILE_REPOSITORY_SYMBOL = Symbol('FileRepository');
 export interface IFileRepository {
-  createFileOnReplica: (replicaId: string) => Promise<void>;
+  findOneFile: (fileId: string) => Promise<File | undefined>;
+  createFileOnReplica: (replicaId: string, fileId: string) => Promise<void>;
 }

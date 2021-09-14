@@ -9,8 +9,8 @@ export interface IReplicaRepository {
   findReplicas: (findOptions: PublicReplicaFilter) => Promise<ReplicaWithFiles[]>;
   findLatestReplicaWithFiles: (findOptions: BaseReplicaFilter) => Promise<ReplicaWithFiles | undefined>;
   createReplica: (replica: Replica) => Promise<void>;
-  updateReplica: (replicaId: string, updatedMetadata: ReplicaMetadata) => Promise<void>;
+  updateOneReplica: (replicaId: string, updatedMetadata: ReplicaMetadata) => Promise<void>;
   updateReplicas: (findOptions: PrivateReplicaFilter, updatedMetadata: ReplicaMetadata) => Promise<void>;
-  deleteReplica: (replicaId: string) => Promise<ReplicaWithFiles | undefined>;
+  deleteOneReplica: (replicaId: string) => Promise<ReplicaWithFiles | undefined>;
   deleteReplicas: (findOptions: PrivateReplicaFilter) => Promise<ReplicaWithFiles[]>;
 }
