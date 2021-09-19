@@ -42,7 +42,6 @@ describe('replica', function () {
       it('should return 200 status code and the requested replica with its files', async function () {
         const replica = getFakeReplica();
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
-        // expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, bucketName, ...restOfMetadata } = replica;
         expect(await requestSender.postFile(replicaId, fileIds[0])).toHaveStatus(StatusCodes.CREATED);

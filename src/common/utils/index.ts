@@ -10,9 +10,9 @@ export const convertObjectToCamelCase = <T extends Record<string, unknown>>(obj:
 
   let camelCasedObject = {};
 
-  keyValues.forEach(([key, value]) => {
+  for (const [key, value] of keyValues) {
     camelCasedObject = { ...camelCasedObject, [camelCase(key)]: value };
-  });
+  }
 
   return camelCasedObject as CamelCasedProperties<T>;
 };

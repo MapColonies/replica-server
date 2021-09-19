@@ -18,7 +18,7 @@ export class LayerController {
       const layers = await this.manager.getAllLayers();
       return res.status(httpStatus.OK).json(layers);
     } catch (error) {
-      next(error);
+      return next(error);
     }
   };
 }

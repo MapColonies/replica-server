@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class secondMigration1631545041778 implements MigrationInterface {
-  name = 'secondMigration1631545041778';
+export class addDeleteOnCascade1631545041778 implements MigrationInterface {
+  name = 'addDeleteOnCascade1631545041778';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

@@ -13,6 +13,9 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+ingress:
+  enabled: false
+
 cloudProvider:
   flavor: openshift
   dockerRegistryUrl: my-registry-url.io
@@ -46,6 +49,13 @@ env:
   metrics:
     enabled: false
     url: http://localhost:55681/v1/metrics
+  objectStorageConfig:
+    host: s3Host
+    port: 9000
+    protocol: http
+    projectId:
+      enabled: true
+      value: 373e47ef2a58d
 
 dbConfig:
   host: localhost
@@ -58,14 +68,6 @@ dbConfig:
     certFileName: postgresql.crt
     keyFileName: postgresql.key
     caFileName: root.crt
-
-objectStorageConfig:
-  host: s3Host
-  port: 9000
-  protocol: http
-  projectId:
-    enabled: true
-    value: 373e47ef2a58d
 
 route:
   enabled: true

@@ -31,10 +31,12 @@ data:
   {{- else }}
   DB_ENABLE_SSL_AUTH: "false"
   {{- end }}
-  OBJECT_STORAGE_PROTOCOL: {{ .Values.objectStorageConfig.protocol }}
-  OBJECT_STORAGE_HOST: {{ .Values.objectStorageConfig.host }}
-  OBJECT_STORAGE_PORT: {{ .Values.objectStorageConfig.port  | quote }}
-  {{- if .Values.objectStorageConfig.projectId.enabled }}
-  OBJECT_STORAGE_PROJECT_ID: {{ .Values.objectStorageConfig.projectId.value }}
+  {{- with .Values.env.objectStorageConfig }}
+  OBJECT_STORAGE_PROTOCOL: {{ .protocol }}
+  OBJECT_STORAGE_HOST: {{ .host }}
+  OBJECT_STORAGE_PORT: {{ .port  | quote }}
+  {{- if .projectId.enabled }}
+  OBJECT_STORAGE_PROJECT_ID: {{ .projectId.value }}
+  {{- end }}
   {{- end }}
 {{- end }}

@@ -1,10 +1,10 @@
 import { Logger } from '@map-colonies/js-logger';
 import { RequestHandler } from 'express';
 import httpStatus, { StatusCodes } from 'http-status-codes';
+import { HttpError } from '@map-colonies/error-express-handler';
 import { injectable, inject } from 'tsyringe';
 import { SnakeCasedProperties } from 'type-fest';
 import { Services } from '../../common/constants';
-import { HttpError } from '../../common/errors';
 import { FileAlreadyExistsError, ReplicaAlreadyExistsError, ReplicaNotFoundError } from '../models/errors';
 import { ReplicaCreateBody, ReplicaMetadata, ReplicaResponse } from '../models/replica';
 import { ReplicaManager } from '../models/replicaManager';
@@ -77,8 +77,12 @@ export class ReplicaController {
   };
 
   public postFile: PostFileHandler = async (req, res, next) => {
+    const {
+      params: { replicaId },
+      body: { fileId },
+    } = req;
     try {
-      await this.manager.createFileOnReplica(req.params.replicaId, req.body.fileId);
+      await this.manager.createFileOnReplica(replicaId, fileId);
       return res.status(httpStatus.CREATED).json();
     } catch (error) {
       if (error instanceof ReplicaNotFoundError) {
