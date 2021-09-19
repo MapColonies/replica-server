@@ -1,5 +1,7 @@
 import jsLogger from '@map-colonies/js-logger';
 import { trace } from '@opentelemetry/api';
+import { snakeCase } from 'snake-case';
+import { SnakeCasedProperties } from 'type-fest';
 import { Services } from '../../src/common/constants';
 import { GeometryType } from '../../src/common/enums';
 import { IObjectStorageConfig } from '../../src/common/interfaces';
@@ -36,4 +38,16 @@ export const convertReplicaToUrls = (
     bucketOrProjectIdWithBucket = `${projectId}:${bucketName}`;
   }
   return fileIds.map((fileId) => `${protocol}://${host}:${port}/${bucketOrProjectIdWithBucket}/${layerId}/${geometryType}/${fileId}`);
+};
+
+export const convertObjectToSnakeCase = <T extends Record<string, unknown>>(obj: T): SnakeCasedProperties<T> => {
+  const keyValues = Object.entries(obj);
+
+  let snakeCasedObject = {};
+
+  for (const [key, value] of keyValues) {
+    snakeCasedObject = { ...snakeCasedObject, [snakeCase(key)]: value };
+  }
+
+  return snakeCasedObject as SnakeCasedProperties<T>;
 };

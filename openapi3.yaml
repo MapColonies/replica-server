@@ -80,7 +80,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/replica'
+              allOf:
+                - $ref: '#/components/schemas/replica'
+                - type: object
+                  required:
+                    - replicaId
+                    - replicaType
+                    - geometryType
+                    - layerId
+                    - bucketName
+                    - timestamp
       security:
         - ApiKeyAuth: []
       responses:

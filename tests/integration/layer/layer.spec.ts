@@ -30,13 +30,13 @@ describe('layer', function () {
   });
 
   afterAll(async function () {
-    await layerRepository.clear();
     await connection.close();
     container.reset();
   });
 
   describe('Happy Path', function () {
     it('should return 200 status code and an empty array of layers when layers data is empty', async function () {
+      await layerRepository.clear();
       const response = await requestSender.getLayers();
 
       expect(response.status).toBe(httpStatusCodes.OK);
