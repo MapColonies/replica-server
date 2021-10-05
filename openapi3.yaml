@@ -463,7 +463,7 @@ components:
           writeOnly: true
         replicaType:
           $ref: '#/components/schemas/replicaType'
-        url:
+        urls:
           type: array
           items:
             type: string

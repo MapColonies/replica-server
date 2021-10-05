@@ -13,9 +13,6 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
-ingress:
-  enabled: false
-
 cloudProvider:
   flavor: openshift
   dockerRegistryUrl: my-registry-url.io
@@ -72,3 +69,11 @@ dbConfig:
 route:
   enabled: true
   path: /
+
+ingress:
+  enabled: false
+  path: /
+  host: 'localhost'
+  cors:
+    enabled: true
+    origin: '*'
