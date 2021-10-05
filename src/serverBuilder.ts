@@ -62,7 +62,6 @@ export class ServerBuilder {
         validateRequests: true,
         ignorePaths: ignorePathRegex,
         validateSecurity: false,
-        validateResponses: true,
       })
     );
   }

@@ -34,7 +34,7 @@ export class ReplicaRequestSender {
 
   public async patchReplicas(filter: Partial<StringifiedPrivateReplicaFilter>, body: StringifiedReplicaUpdate): Promise<supertest.Response> {
     const snakeCasedFilter = convertObjectToSnakeCase(filter);
-    return supertest.agent(this.app).delete(`/replica`).query(snakeCasedFilter).set('Content-Type', 'application/json').send(body);
+    return supertest.agent(this.app).patch(`/replica`).query(snakeCasedFilter).set('Content-Type', 'application/json').send(body);
   }
 
   public async deleteReplica(replicaId: string): Promise<supertest.Response> {
