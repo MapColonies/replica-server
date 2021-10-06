@@ -2,6 +2,7 @@ import faker from 'faker';
 import { BUCKET_NAME_MIN_LENGTH_LIMIT } from '../../src/common/constants';
 import { GeometryType, ReplicaType } from '../../src/common/enums';
 import { IObjectStorageConfig } from '../../src/common/interfaces';
+import { createUrlPaths } from '../../src/common/utils';
 import { Layer } from '../../src/layer/models/layer';
 import { File } from '../../src/replica/models/file';
 import { ReplicaCreateBody, ReplicaResponse } from '../../src/replica/models/replica';
@@ -112,5 +113,7 @@ export const convertReplicaToUrls = (replica: StringifiedReplica, fileIds: strin
   if (includeProjectId && projectId !== undefined) {
     bucketOrProjectIdWithBucket = `${projectId}:${bucketName}`;
   }
-  return fileIds.map((fileId) => `${protocol}://${host}:${port}/${bucketOrProjectIdWithBucket}/${layerId}/${geometryType}/${fileId}`);
+  const header = `${protocol}://${host}:${port}`;
+  return createUrlPaths(header, [bucketOrProjectIdWithBucket, layerId.toString(), geometryType], fileIds);
+  // return fileIds.map((fileId) => `${protocol}://${host}:${port}/${bucketOrProjectIdWithBucket}/${layerId}/${geometryType}/${fileId}`);
 };

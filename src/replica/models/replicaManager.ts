@@ -1,11 +1,10 @@
-import { join } from 'path';
 import { Logger } from '@map-colonies/js-logger';
 import { inject, injectable } from 'tsyringe';
 import { Services } from '../../common/constants';
 import { IObjectStorageConfig } from '../../common/interfaces';
 import { FILE_REPOSITORY_SYMBOL, IFileRepository } from '../DAL/IFileRepository';
 import { IReplicaRepository, REPLICA_REPOSITORY_SYMBOL } from '../DAL/IReplicaRepository';
-import { isStringUndefinedOrEmpty } from '../../common/utils';
+import { createUrlPaths, isStringUndefinedOrEmpty } from '../../common/utils';
 import { ReplicaNotFoundError, ReplicaAlreadyExistsError, FileAlreadyExistsError } from './errors';
 import { ReplicaCreateBody, ReplicaMetadata, ReplicaResponse, ReplicaWithFiles } from './replica';
 import { BaseReplicaFilter, PrivateReplicaFilter, PublicReplicaFilter } from './replicaFilter';
@@ -142,9 +141,10 @@ export class ReplicaManager {
     if (!isStringUndefinedOrEmpty(projectId)) {
       bucketOrProjectIdWithBucket = `${projectId}:${bucketName}`;
     }
-    return files.map((file) => {
-      const filePath = join(bucketOrProjectIdWithBucket, layerId.toString(), geometryType, file.fileId);
-      return `${this.urlHeader}/${filePath}`;
-    });
+    return createUrlPaths(
+      `${this.urlHeader}`,
+      [bucketOrProjectIdWithBucket, layerId.toString(), geometryType],
+      files.map((file) => file.fileId)
+    );
   }
 }

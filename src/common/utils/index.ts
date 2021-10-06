@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { CamelCasedProperties } from 'type-fest';
 import camelCase from 'camelcase';
 
@@ -15,4 +16,11 @@ export const convertObjectToCamelCase = <T extends Record<string, unknown>>(obj:
   }
 
   return camelCasedObject as CamelCasedProperties<T>;
+};
+
+export const createUrlPaths = (urlHeader: string, subPaths: string[], fileIds: string[]): string[] => {
+  return fileIds.map((fileId) => {
+    const filePath = join(...subPaths, fileId);
+    return `${urlHeader}/${filePath}`;
+  });
 };
