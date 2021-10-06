@@ -51,6 +51,23 @@ jobs:
       matrix:
         node: [12.x, 14.x]
 
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:12
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: 1234
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v2
@@ -81,3 +98,6 @@ jobs:
 
       - name: build Docker image
         run: docker build -t test-build:latest .
+
+      - name: build migrations Docker image
+        run: docker build -f ./migrations.Dockerfile -t test-migrations-build:latest .
