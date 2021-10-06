@@ -371,16 +371,6 @@ components:
             $ref: '#/components/schemas/replicaDate'
         additionalProperties: false
         minProperties: 1
-    replicaType:
-      in: query
-      name: replica_type
-      schema:
-        $ref: '#/components/schemas/replicaType'
-    layerId:
-      in: query
-      name: layer_id
-      schema:
-        $ref: '#/components/schemas/layerId'
   responses:
     BadRequest:
       description: Bad Request

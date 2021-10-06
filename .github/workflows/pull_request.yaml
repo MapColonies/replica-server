@@ -47,6 +47,7 @@ jobs:
   tests:
     name: Run Tests
     runs-on: ubuntu-latest
+    container: node:12
     strategy:
       matrix:
         node: [12.x, 14.x]
