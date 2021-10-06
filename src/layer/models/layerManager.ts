@@ -7,8 +7,8 @@ import { Layer } from './layer';
 @injectable()
 export class LayerManager {
   public constructor(
-    @inject(Services.LOGGER) private readonly logger: Logger,
-    @inject(LAYER_REPOSITORY_SYMBOL) private readonly layerRepository: ILayerRepository
+    @inject(LAYER_REPOSITORY_SYMBOL) private readonly layerRepository: ILayerRepository,
+    @inject(Services.LOGGER) private readonly logger: Logger
   ) {}
   public async getAllLayers(): Promise<Layer[]> {
     return this.layerRepository.findAllLayers();

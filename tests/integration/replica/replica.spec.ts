@@ -6,16 +6,7 @@ import { Connection, QueryFailedError, Repository } from 'typeorm';
 import faker from 'faker';
 import { getApp } from '../../../src/app';
 import { Replica as ReplicaEntity } from '../../../src/replica/DAL/typeorm/replica';
-import {
-  BOTTOM_FROM,
-  convertReplicaToResponse,
-  convertReplicaToUrls,
-  createFakeDate,
-  getBaseRegisterOptions,
-  getMockObjectStorageConfig,
-  sortByOrderFilter,
-  TOP_TO,
-} from '../helpers';
+import { BOTTOM_FROM, createFakeDateBetweenBottomAndTop, getBaseRegisterOptions, sortByOrderFilter, TOP_TO } from '../helpers';
 import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, Services } from '../../../src/common/constants';
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
 import { REPLICA_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/IReplicaRepository';
@@ -24,16 +15,19 @@ import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
 import { initConnection } from '../../../src/common/db';
 import { FILE_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/IFileRepository';
-import { ReplicaRequestSender } from './helpers/requestSender';
 import {
-  getFakeBaseFilter,
-  getFakePrivateFilter,
-  getFakePublicFilter,
-  getFakeReplica,
-  getFakeReplicaUpdate,
+  generateFakeBaseFilter,
+  generateFakePrivateFilter,
+  generateFakePublicFilter,
+  generateFakeReplica,
+  generateFakeReplicaUpdate,
+  generateMockObjectStorageConfig,
   StringifiedReplica,
   StringifiedReplicaUpdate,
-} from './helpers/generators';
+  convertReplicaToResponse,
+  convertReplicaToUrls,
+} from '../../helpers/helper';
+import { ReplicaRequestSender } from './helpers/requestSender';
 
 describe('replica', function () {
   let requestSender: ReplicaRequestSender;
@@ -47,7 +41,7 @@ describe('replica', function () {
     const connectionOptions = config.get<DbConfig>('db');
     connection = await initConnection(connectionOptions);
     registerOptions.override.push({ token: Connection, provider: { useValue: connection } });
-    registerOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: getMockObjectStorageConfig() } });
+    registerOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } });
     const app = await getApp(registerOptions);
     requestSender = new ReplicaRequestSender(app);
     replicaRepository = connection.getRepository(ReplicaEntity);
@@ -61,7 +55,7 @@ describe('replica', function () {
   describe('Happy Path', function () {
     describe('GET /replica/{replicaId}', function () {
       it('should return 200 status code and the requested replica', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, bucketName, ...restOfMetadata } = replica;
         expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
@@ -73,7 +67,7 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and the requested replica with its files', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, bucketName, ...restOfMetadata } = replica;
@@ -89,7 +83,7 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and the requested replica with its files when projectId is configured', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, bucketName, ...restOfMetadata } = replica;
@@ -98,7 +92,7 @@ describe('replica', function () {
         expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
 
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: getMockObjectStorageConfig(true) } });
+        mockRegisterOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicaById(replicaId);
@@ -112,12 +106,12 @@ describe('replica', function () {
 
     describe('GET /replica/latest', function () {
       it('should return 200 status code and the latest replica according to filter', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, bucketName, ...restOfMetadata } = replica;
         expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
         const { replicaType, geometryType, layerId } = replica;
-        const filter = getFakeBaseFilter({ replicaType, geometryType, layerId });
+        const filter = generateFakeBaseFilter({ replicaType, geometryType, layerId });
 
         const response = await requestSender.getLatestReplica(filter);
 
@@ -126,7 +120,7 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and the latest replica with its files according to filter', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
         const { replicaId, bucketName, ...restOfMetadata } = replica;
@@ -134,7 +128,7 @@ describe('replica', function () {
         expect(await requestSender.postFile(replicaId, fileIds[1])).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
         const { replicaType, geometryType, layerId } = replica;
-        const filter = getFakeBaseFilter({ replicaType, geometryType, layerId });
+        const filter = generateFakeBaseFilter({ replicaType, geometryType, layerId });
 
         const response = await requestSender.getLatestReplica(filter);
 
@@ -147,11 +141,11 @@ describe('replica', function () {
 
     describe('GET /replica', function () {
       it('should return 200 status code and empty array of replicas when there are none matching the filter', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, layerId } = replica;
         expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
-        const filter = getFakeBaseFilter({ layerId: layerId + 1 });
+        const filter = generateFakeBaseFilter({ layerId: layerId + 1 });
 
         const response = await requestSender.getReplicas(filter);
 
@@ -160,11 +154,11 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and the matching replicas according to filter with default sort', async function () {
-        const filter = getFakeBaseFilter();
+        const filter = generateFakeBaseFilter();
         const { geometryType, replicaType, layerId } = filter;
-        const replica1 = getFakeReplica({ geometryType, replicaType, layerId });
-        const replica2 = getFakeReplica({ geometryType, replicaType, layerId: layerId + 1 });
-        const replica3 = getFakeReplica({ geometryType, replicaType, layerId });
+        const replica1 = generateFakeReplica({ geometryType, replicaType, layerId });
+        const replica2 = generateFakeReplica({ geometryType, replicaType, layerId: layerId + 1 });
+        const replica3 = generateFakeReplica({ geometryType, replicaType, layerId });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -178,11 +172,11 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and the matching replicas according to filter with ascending sort', async function () {
-        const filter = getFakePublicFilter({ sort: 'asc' });
+        const filter = generateFakePublicFilter({ sort: 'asc' });
         const { geometryType, replicaType, layerId } = filter;
-        const replica1 = getFakeReplica({ geometryType, replicaType, layerId });
-        const replica2 = getFakeReplica({ geometryType, replicaType, layerId: layerId + 1 });
-        const replica3 = getFakeReplica({ geometryType, replicaType, layerId });
+        const replica1 = generateFakeReplica({ geometryType, replicaType, layerId });
+        const replica2 = generateFakeReplica({ geometryType, replicaType, layerId: layerId + 1 });
+        const replica3 = generateFakeReplica({ geometryType, replicaType, layerId });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -196,18 +190,28 @@ describe('replica', function () {
       });
 
       it.each([
-        [BOTTOM_FROM.toISOString(), TOP_TO.toISOString(), createFakeDate().toISOString(), faker.date.past(undefined, BOTTOM_FROM).toISOString()],
-        [BOTTOM_FROM.toISOString(), undefined, createFakeDate().toISOString(), faker.date.past(undefined, BOTTOM_FROM).toISOString()],
-        [undefined, TOP_TO.toISOString(), createFakeDate().toISOString(), faker.date.future(undefined, BOTTOM_FROM).toISOString()],
+        [
+          BOTTOM_FROM.toISOString(),
+          TOP_TO.toISOString(),
+          createFakeDateBetweenBottomAndTop().toISOString(),
+          faker.date.past(undefined, BOTTOM_FROM).toISOString(),
+        ],
+        [
+          BOTTOM_FROM.toISOString(),
+          undefined,
+          createFakeDateBetweenBottomAndTop().toISOString(),
+          faker.date.past(undefined, BOTTOM_FROM).toISOString(),
+        ],
+        [undefined, TOP_TO.toISOString(), createFakeDateBetweenBottomAndTop().toISOString(), faker.date.future(undefined, BOTTOM_FROM).toISOString()],
         [BOTTOM_FROM.toISOString(), TOP_TO.toISOString(), TOP_TO.toISOString(), BOTTOM_FROM.toISOString()],
       ])(
         'should return 200 status code and the matching replicas according to time filter',
         async function (exclusiveFrom: string | undefined, to: string | undefined, matchedDate: string, unmatchedDate: string) {
-          const filter = getFakePublicFilter({ exclusiveFrom, to });
+          const filter = generateFakePublicFilter({ exclusiveFrom, to });
           const { geometryType, replicaType, layerId } = filter;
-          const replica1 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: matchedDate });
-          const replica2 = getFakeReplica({ geometryType, replicaType, layerId: layerId + 1, timestamp: unmatchedDate });
-          const replica3 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: matchedDate });
+          const replica1 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: matchedDate });
+          const replica2 = generateFakeReplica({ geometryType, replicaType, layerId: layerId + 1, timestamp: unmatchedDate });
+          const replica3 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: matchedDate });
           expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
           expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
           expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -222,12 +226,12 @@ describe('replica', function () {
       );
 
       it('should return 200 status code and an empty array of replicas when timestamp to filter is prior to from filter', async function () {
-        const filter = getFakePublicFilter({ exclusiveFrom: TOP_TO.toISOString(), to: BOTTOM_FROM.toISOString() });
+        const filter = generateFakePublicFilter({ exclusiveFrom: TOP_TO.toISOString(), to: BOTTOM_FROM.toISOString() });
         const { geometryType, replicaType, layerId } = filter;
-        const fakeTimestamp = createFakeDate().toISOString();
-        const replica1 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeTimestamp });
-        const replica2 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeTimestamp });
-        const replica3 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeTimestamp });
+        const fakeTimestamp = createFakeDateBetweenBottomAndTop().toISOString();
+        const replica1 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeTimestamp });
+        const replica2 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeTimestamp });
+        const replica3 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeTimestamp });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -240,13 +244,13 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and an empty array of replicas if no replica matched the timestamp filter', async function () {
-        const filter = getFakePublicFilter({ exclusiveFrom: TOP_TO.toISOString(), to: BOTTOM_FROM.toISOString() });
+        const filter = generateFakePublicFilter({ exclusiveFrom: TOP_TO.toISOString(), to: BOTTOM_FROM.toISOString() });
         const { geometryType, replicaType, layerId } = filter;
         const fakeFutureTimestamp = faker.date.future(undefined, TOP_TO).toISOString();
         const fakePastTimestamp = faker.date.past(undefined, BOTTOM_FROM).toISOString();
-        const replica1 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeFutureTimestamp });
-        const replica2 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: fakePastTimestamp });
-        const replica3 = getFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeFutureTimestamp });
+        const replica1 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeFutureTimestamp });
+        const replica2 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: fakePastTimestamp });
+        const replica3 = generateFakeReplica({ geometryType, replicaType, layerId, timestamp: fakeFutureTimestamp });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -261,7 +265,7 @@ describe('replica', function () {
 
     describe('POST /replica/{replicaId}', function () {
       it('should return 201 status code for creating a new file on replica', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
 
         const response = await requestSender.postFile(replica.replicaId, faker.datatype.uuid());
@@ -272,7 +276,7 @@ describe('replica', function () {
 
     describe('POST /replica', function () {
       it('should return 201 status code for creating a new replica', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         const response = await requestSender.postReplica(replica);
 
         expect(response).toHaveProperty('status', httpStatusCodes.CREATED);
@@ -281,9 +285,9 @@ describe('replica', function () {
 
     describe('PATCH /replica/{replicaId}', function () {
       it('should return 200 status code for updating a replica', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
-        const replicaUpdate = getFakeReplicaUpdate();
+        const replicaUpdate = generateFakeReplicaUpdate();
 
         const response = await requestSender.patchReplica(replica.replicaId, replicaUpdate);
 
@@ -293,12 +297,12 @@ describe('replica', function () {
 
     describe('PATCH /replica', function () {
       it('should return 200 status code and update all, some or none matching replicas according to filter', async function () {
-        const filter = getFakePublicFilter({ replicaType: ReplicaType.SNAPSHOT });
+        const filter = generateFakePublicFilter({ replicaType: ReplicaType.SNAPSHOT });
         const { replicaType, geometryType, layerId } = filter;
         const updatedLayerId = layerId + 1;
-        const replica1 = getFakeReplica({ replicaType, geometryType, layerId });
-        const replica2 = getFakeReplica({ replicaType, geometryType, layerId: updatedLayerId });
-        const replica3 = getFakeReplica({ replicaType, geometryType, layerId });
+        const replica1 = generateFakeReplica({ replicaType, geometryType, layerId });
+        const replica2 = generateFakeReplica({ replicaType, geometryType, layerId: updatedLayerId });
+        const replica3 = generateFakeReplica({ replicaType, geometryType, layerId });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -355,10 +359,20 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and update all, some or none matching replicas according to time filter', async function () {
-        const filter = getFakePublicFilter({ layerId: 1, exclusiveFrom: BOTTOM_FROM.toISOString(), to: TOP_TO.toISOString() });
+        const filter = generateFakePublicFilter({ layerId: 1, exclusiveFrom: BOTTOM_FROM.toISOString(), to: TOP_TO.toISOString() });
         const { replicaType, geometryType, layerId } = filter;
-        const replica1 = getFakeReplica({ replicaType, geometryType, layerId, timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString() });
-        const replica2 = getFakeReplica({ replicaType, geometryType, layerId, timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString() });
+        const replica1 = generateFakeReplica({
+          replicaType,
+          geometryType,
+          layerId,
+          timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString(),
+        });
+        const replica2 = generateFakeReplica({
+          replicaType,
+          geometryType,
+          layerId,
+          timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString(),
+        });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
 
@@ -413,7 +427,7 @@ describe('replica', function () {
 
     describe('DELETE /replica/{replicaId}', function () {
       it('should return 200 status code for deleting a replica and all its files and return the full replica as body', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId, bucketName, ...restOfMetadata } = replica;
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
@@ -429,7 +443,7 @@ describe('replica', function () {
       });
 
       it('should return 200 status code for deleting a replica with it as body', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
 
         const response = await requestSender.deleteReplica(replica.replicaId);
@@ -443,11 +457,11 @@ describe('replica', function () {
 
     describe('DELETE /replica', function () {
       it('should return 200 status code and delete all, some and none matching replicas and all its files and return the fully deleted replicas as body', async function () {
-        const filter = getFakePublicFilter({ replicaType: ReplicaType.SNAPSHOT });
+        const filter = generateFakePublicFilter({ replicaType: ReplicaType.SNAPSHOT });
         const { replicaType, layerId } = filter;
-        const replica1 = getFakeReplica({ replicaType, geometryType: GeometryType.POINT, layerId });
-        const replica2 = getFakeReplica({ replicaType, geometryType: GeometryType.POINT, layerId });
-        const replica3 = getFakeReplica({ replicaType, geometryType: GeometryType.LINESTRING, layerId });
+        const replica1 = generateFakeReplica({ replicaType, geometryType: GeometryType.POINT, layerId });
+        const replica2 = generateFakeReplica({ replicaType, geometryType: GeometryType.POINT, layerId });
+        const replica3 = generateFakeReplica({ replicaType, geometryType: GeometryType.LINESTRING, layerId });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -480,11 +494,26 @@ describe('replica', function () {
       });
 
       it('should return 200 status code and delete all, some or none matching replicas according to time filter', async function () {
-        const filter = getFakePublicFilter({ exclusiveFrom: BOTTOM_FROM.toISOString(), to: TOP_TO.toISOString() });
+        const filter = generateFakePublicFilter({ exclusiveFrom: BOTTOM_FROM.toISOString(), to: TOP_TO.toISOString() });
         const { replicaType, geometryType, layerId } = filter;
-        const replica1 = getFakeReplica({ replicaType, geometryType, layerId, timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString() });
-        const replica2 = getFakeReplica({ replicaType, geometryType, layerId, timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString() });
-        const replica3 = getFakeReplica({ replicaType, geometryType, layerId, timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString() });
+        const replica1 = generateFakeReplica({
+          replicaType,
+          geometryType,
+          layerId,
+          timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString(),
+        });
+        const replica2 = generateFakeReplica({
+          replicaType,
+          geometryType,
+          layerId,
+          timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString(),
+        });
+        const replica3 = generateFakeReplica({
+          replicaType,
+          geometryType,
+          layerId,
+          timestamp: faker.date.between(BOTTOM_FROM, TOP_TO).toISOString(),
+        });
         expect(await requestSender.postReplica(replica1)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica2)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postReplica(replica3)).toHaveStatus(StatusCodes.CREATED);
@@ -492,7 +521,7 @@ describe('replica', function () {
         // order replicas by timestamp and delete the one in between
         const orderedReplicas = sortByOrderFilter([replica1, replica2, replica3]);
         const firstFrom = faker.date.between(orderedReplicas[2].timestamp, orderedReplicas[1].timestamp);
-        const firstTo = faker.date.between(firstFrom, orderedReplicas[0].timestamp);
+        const firstTo = faker.date.between(orderedReplicas[1].timestamp, orderedReplicas[0].timestamp);
 
         const firstResponse = await requestSender.deleteReplicas({ ...filter, exclusiveFrom: firstFrom.toISOString(), to: firstTo.toISOString() });
         expect(firstResponse.status).toBe(httpStatusCodes.OK);
@@ -534,7 +563,7 @@ describe('replica', function () {
       });
 
       it('should return 404 if the replica with the given replica id is hidden', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const { replicaId } = replica;
 
@@ -548,14 +577,14 @@ describe('replica', function () {
     describe('GET /replica/latest', function () {
       it.each([
         [
-          getFakeBaseFilter({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakeBaseFilter({ replicaType: faker.random.word() as ReplicaType }),
           `request.query.replica_type should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakeBaseFilter({ geometryType: faker.random.word() as GeometryType }),
+          generateFakeBaseFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakeBaseFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.layer_id should be number`],
+        [generateFakeBaseFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.layer_id should be number`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -567,7 +596,7 @@ describe('replica', function () {
       );
 
       it('should return 400 if replica type is missing on query filter', async function () {
-        const filter = getFakeBaseFilter();
+        const filter = generateFakeBaseFilter();
         const { replicaType, ...restOfFilter } = filter;
         const response = await requestSender.getLatestReplica(restOfFilter);
 
@@ -576,7 +605,7 @@ describe('replica', function () {
       });
 
       it('should return 400 if geometry type is missing on query filter', async function () {
-        const filter = getFakeBaseFilter();
+        const filter = generateFakeBaseFilter();
         const { geometryType, ...restOfFilter } = filter;
         const response = await requestSender.getLatestReplica(restOfFilter);
 
@@ -585,7 +614,7 @@ describe('replica', function () {
       });
 
       it('should return 400 if layer id is missing on query filter', async function () {
-        const filter = getFakeBaseFilter();
+        const filter = generateFakeBaseFilter();
         const { layerId, ...restOfFilter } = filter;
         const response = await requestSender.getLatestReplica(restOfFilter);
 
@@ -595,7 +624,7 @@ describe('replica', function () {
 
       it('should return 404 if no replica was found based on the query filter', async function () {
         await replicaRepository.clear();
-        const filter = getFakeBaseFilter();
+        const filter = generateFakeBaseFilter();
         const { replicaType, geometryType, layerId } = filter;
         const response = await requestSender.getLatestReplica(filter);
 
@@ -608,13 +637,13 @@ describe('replica', function () {
 
       it('should return 404 if no latest replica was found due to the replica being hidden', async function () {
         await replicaRepository.clear();
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
         const { replicaId, bucketName, replicaType, geometryType, layerId } = replica;
         expect(await requestSender.postFile(replicaId, fileIds[0])).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postFile(replicaId, fileIds[1])).toHaveStatus(StatusCodes.CREATED);
-        const filter = getFakeBaseFilter({ replicaType, geometryType, layerId });
+        const filter = generateFakeBaseFilter({ replicaType, geometryType, layerId });
 
         const response = await requestSender.getLatestReplica(filter);
 
@@ -629,17 +658,17 @@ describe('replica', function () {
     describe('GET /replica', function () {
       it.each([
         [
-          getFakePublicFilter({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakePublicFilter({ replicaType: faker.random.word() as ReplicaType }),
           `request.query.replica_type should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakePublicFilter({ geometryType: faker.random.word() as GeometryType }),
+          generateFakePublicFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakePublicFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.layer_id should be number`],
-        [getFakePublicFilter({ exclusiveFrom: faker.random.word() }), `request.query.exclusive_from should match format "date-time"`],
-        [getFakePublicFilter({ to: faker.random.word() }), `request.query.to should match format "date-time"`],
-        [getFakePublicFilter({ sort: 'bad' as SortFilter }), `request.query.sort should be equal to one of the allowed values: asc, desc`],
+        [generateFakePublicFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.layer_id should be number`],
+        [generateFakePublicFilter({ exclusiveFrom: faker.random.word() }), `request.query.exclusive_from should match format "date-time"`],
+        [generateFakePublicFilter({ to: faker.random.word() }), `request.query.to should match format "date-time"`],
+        [generateFakePublicFilter({ sort: 'bad' as SortFilter }), `request.query.sort should be equal to one of the allowed values: asc, desc`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -651,7 +680,7 @@ describe('replica', function () {
       );
 
       it('should return 400 if the filter is missing replica_type parameter', async function () {
-        const filter = getFakePublicFilter();
+        const filter = generateFakePublicFilter();
         const { replicaType, ...restOfFilter } = filter;
         const response = await requestSender.getReplicas(restOfFilter);
 
@@ -660,7 +689,7 @@ describe('replica', function () {
       });
 
       it('should return 400 if the filter is missing geometry_type parameter', async function () {
-        const filter = getFakePublicFilter();
+        const filter = generateFakePublicFilter();
         const { geometryType, ...restOfFilter } = filter;
         const response = await requestSender.getReplicas(restOfFilter);
 
@@ -669,7 +698,7 @@ describe('replica', function () {
       });
 
       it('should return 400 if the filter is missing layer_id parameter', async function () {
-        const filter = getFakePublicFilter();
+        const filter = generateFakePublicFilter();
         const { layerId, ...restOfFilter } = filter;
         const response = await requestSender.getReplicas(restOfFilter);
 
@@ -705,7 +734,7 @@ describe('replica', function () {
       });
 
       it('should return 409 status code if the file to be created already exists', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         const fileId = faker.datatype.uuid();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         expect(await requestSender.postFile(replica.replicaId, fileId)).toHaveStatus(StatusCodes.CREATED);
@@ -720,23 +749,23 @@ describe('replica', function () {
 
     describe('POST /replica', function () {
       it.each([
-        [getFakeReplica({ replicaId: faker.random.word() }), `request.body.replicaId should match format "uuid"`],
+        [generateFakeReplica({ replicaId: faker.random.word() }), `request.body.replicaId should match format "uuid"`],
         [
-          getFakeReplica({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakeReplica({ replicaType: faker.random.word() as ReplicaType }),
           `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakeReplica({ geometryType: faker.random.word() as GeometryType }),
+          generateFakeReplica({ geometryType: faker.random.word() as GeometryType }),
           `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakeReplica({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
-        [getFakeReplica({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
+        [generateFakeReplica({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
+        [generateFakeReplica({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
         [
-          getFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
+          generateFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
           `request.body.bucketName should NOT be shorter than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
         ],
         [
-          getFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
+          generateFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
           `request.body.bucketName should NOT be longer than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
         ],
       ])('should return 400 status code if replica body has an invalid parameter', async function (replica: StringifiedReplica, bodyMessage: string) {
@@ -747,7 +776,7 @@ describe('replica', function () {
       });
 
       it('should return 409 if the replica already exists', async function () {
-        const replica = getFakeReplica();
+        const replica = generateFakeReplica();
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
 
         const response = await requestSender.postReplica(replica);
@@ -760,7 +789,7 @@ describe('replica', function () {
 
     describe('PATCH /replica/{replicaId}', function () {
       it('should return 400 status code if the replica id is not valid', async function () {
-        const replicaUpdate = getFakeReplicaUpdate();
+        const replicaUpdate = generateFakeReplicaUpdate();
         const response = await requestSender.patchReplica(faker.random.word(), replicaUpdate);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
@@ -769,22 +798,22 @@ describe('replica', function () {
 
       it.each([
         [
-          getFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
           `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
+          generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
           `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakeReplicaUpdate({ isHidden: (faker.random.word() as unknown) as boolean }), `request.body.isHidden should be boolean`],
-        [getFakeReplicaUpdate({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
-        [getFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
+        [generateFakeReplicaUpdate({ isHidden: (faker.random.word() as unknown) as boolean }), `request.body.isHidden should be boolean`],
+        [generateFakeReplicaUpdate({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
+        [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
         [
-          getFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
+          generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
           `request.body.bucketName should NOT be shorter than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
         ],
         [
-          getFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
+          generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
           `request.body.bucketName should NOT be longer than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
         ],
       ])(
@@ -798,7 +827,7 @@ describe('replica', function () {
       );
 
       it('should return 404 status code if the requested replica id does not exist', async function () {
-        const replicaUpdate = getFakeReplicaUpdate();
+        const replicaUpdate = generateFakeReplicaUpdate();
         const fakeReplicaId = faker.datatype.uuid();
         const response = await requestSender.patchReplica(fakeReplicaId, replicaUpdate);
 
@@ -810,17 +839,17 @@ describe('replica', function () {
     describe('PATCH /replica', function () {
       it.each([
         [
-          getFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
           `request.query.filter.replica_type should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
+          generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakePrivateFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.filter.layer_id should be number`],
-        [getFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
-        [getFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
-        [getFakePrivateFilter({ isHidden: (faker.random.word() as unknown) as boolean }), `request.query.filter.is_hidden should be boolean`],
+        [generateFakePrivateFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.filter.layer_id should be number`],
+        [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
+        [generateFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
+        [generateFakePrivateFilter({ isHidden: (faker.random.word() as unknown) as boolean }), `request.query.filter.is_hidden should be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -833,28 +862,28 @@ describe('replica', function () {
 
       it.each([
         [
-          getFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
           `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
+          generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
           `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakeReplicaUpdate({ isHidden: (faker.random.word() as unknown) as boolean }), `request.body.isHidden should be boolean`],
-        [getFakeReplicaUpdate({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
-        [getFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
+        [generateFakeReplicaUpdate({ isHidden: (faker.random.word() as unknown) as boolean }), `request.body.isHidden should be boolean`],
+        [generateFakeReplicaUpdate({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
+        [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
         [
-          getFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
+          generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
           `request.body.bucketName should NOT be shorter than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
         ],
         [
-          getFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
+          generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
           `request.body.bucketName should NOT be longer than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
         ],
       ])(
         'should return 400 status code if update replica body has an invalid parameter',
         async function (replicaUpdate: StringifiedReplicaUpdate, bodyMessage: string) {
-          const response = await requestSender.patchReplicas(getFakePrivateFilter(), replicaUpdate);
+          const response = await requestSender.patchReplicas(generateFakePrivateFilter(), replicaUpdate);
 
           expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
           expect(response.body).toHaveProperty('message', bodyMessage);
@@ -882,17 +911,17 @@ describe('replica', function () {
     describe('DELETE /replica', function () {
       it.each([
         [
-          getFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
+          generateFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
           `request.query.filter.replica_type should be equal to one of the allowed values: snapshot, delta`,
         ],
         [
-          getFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
+          generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [getFakePrivateFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.filter.layer_id should be number`],
-        [getFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
-        [getFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
-        [getFakePrivateFilter({ isHidden: (faker.random.word() as unknown) as boolean }), `request.query.filter.is_hidden should be boolean`],
+        [generateFakePrivateFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.filter.layer_id should be number`],
+        [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
+        [generateFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
+        [generateFakePrivateFilter({ isHidden: (faker.random.word() as unknown) as boolean }), `request.query.filter.is_hidden should be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -935,7 +964,7 @@ describe('replica', function () {
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
 
-        const response = await mockReplicaRequestSender.getLatestReplica(getFakeBaseFilter());
+        const response = await mockReplicaRequestSender.getLatestReplica(generateFakeBaseFilter());
 
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
@@ -953,7 +982,7 @@ describe('replica', function () {
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
 
-        const response = await mockReplicaRequestSender.getReplicas(getFakePublicFilter());
+        const response = await mockReplicaRequestSender.getReplicas(generateFakePublicFilter());
 
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
@@ -996,7 +1025,7 @@ describe('replica', function () {
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
 
-        const response = await mockReplicaRequestSender.postReplica(getFakeReplica());
+        const response = await mockReplicaRequestSender.postReplica(generateFakeReplica());
 
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
@@ -1015,7 +1044,7 @@ describe('replica', function () {
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
 
-        const response = await mockReplicaRequestSender.patchReplica(faker.datatype.uuid(), getFakeReplicaUpdate());
+        const response = await mockReplicaRequestSender.patchReplica(faker.datatype.uuid(), generateFakeReplicaUpdate());
 
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
@@ -1033,7 +1062,7 @@ describe('replica', function () {
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
 
-        const response = await mockReplicaRequestSender.patchReplicas(getFakePrivateFilter(), getFakeReplicaUpdate());
+        const response = await mockReplicaRequestSender.patchReplicas(generateFakePrivateFilter(), generateFakeReplicaUpdate());
 
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
@@ -1069,7 +1098,7 @@ describe('replica', function () {
         const mockApp = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
 
-        const response = await mockReplicaRequestSender.deleteReplicas(getFakePrivateFilter());
+        const response = await mockReplicaRequestSender.deleteReplicas(generateFakePrivateFilter());
 
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');

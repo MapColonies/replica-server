@@ -1,6 +1,7 @@
 import { Column, Entity, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
 import { GeometryType } from '../../../common/enums';
 import { Layer as ILayer } from '../../models/layer';
+
 @Entity()
 export class Layer implements ILayer {
   @PrimaryColumn({ name: 'layer_id', type: 'integer' })

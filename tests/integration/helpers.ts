@@ -4,19 +4,14 @@ import { trace } from '@opentelemetry/api';
 import { snakeCase } from 'snake-case';
 import { SnakeCasedProperties } from 'type-fest';
 import { Services } from '../../src/common/constants';
-import { IObjectStorageConfig } from '../../src/common/interfaces';
 import { SortFilter } from '../../src/common/types';
 import { RegisterOptions } from '../../src/containerConfig';
-import { ReplicaResponse } from '../../src/replica/models/replica';
-import { StringifiedReplica } from './replica/helpers/generators';
 
 export const DEFAULT_SORT = 'desc';
 
 export const BOTTOM_FROM = faker.date.past();
 
 export const TOP_TO = faker.date.future();
-
-export type StringifiedReplicaResponse = Omit<ReplicaResponse, 'timestamp'> & { timestamp: string };
 
 export const getBaseRegisterOptions = (): Required<RegisterOptions> => {
   return {
@@ -26,31 +21,6 @@ export const getBaseRegisterOptions = (): Required<RegisterOptions> => {
     ],
     useChild: true,
   };
-};
-
-export const getMockObjectStorageConfig = (includeProjectId = false): IObjectStorageConfig => {
-  const objectStorageConfig: IObjectStorageConfig = { protocol: 'http', host: 'some_storage_host', port: '9000' };
-  if (includeProjectId) {
-    objectStorageConfig.projectId = 'some_project_id';
-  }
-  return objectStorageConfig;
-};
-
-export const convertReplicaToResponse = (replica: StringifiedReplica, fileIds?: string[], includeProjectId = false): StringifiedReplicaResponse => {
-  const urls = fileIds !== undefined ? convertReplicaToUrls(replica, fileIds, includeProjectId) : [];
-  const { replicaId, bucketName, ...restOfMetadata } = replica;
-  return { ...restOfMetadata, urls };
-};
-
-export const convertReplicaToUrls = (replica: StringifiedReplica, fileIds: string[], includeProjectId = false): string[] => {
-  const { protocol, host, projectId, port } = getMockObjectStorageConfig(includeProjectId);
-  const { bucketName, layerId, geometryType } = replica;
-
-  let bucketOrProjectIdWithBucket = bucketName;
-  if (includeProjectId && projectId !== undefined) {
-    bucketOrProjectIdWithBucket = `${projectId}:${bucketName}`;
-  }
-  return fileIds.map((fileId) => `${protocol}://${host}:${port}/${bucketOrProjectIdWithBucket}/${layerId}/${geometryType}/${fileId}`);
 };
 
 export const convertObjectToSnakeCase = <T extends Record<string, unknown>>(obj: T): SnakeCasedProperties<T> => {
@@ -73,6 +43,6 @@ export const sortByOrderFilter = <T extends { timestamp: string | Date }>(data: 
   });
 };
 
-export const createFakeDate = (): Date => {
+export const createFakeDateBetweenBottomAndTop = (): Date => {
   return faker.date.between(BOTTOM_FROM, TOP_TO);
 };

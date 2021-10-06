@@ -9,7 +9,7 @@ import { Layer } from '../../../src/layer/models/layer';
 import { initConnection } from '../../../src/common/db';
 import { DbConfig } from '../../../src/common/interfaces';
 import { getBaseRegisterOptions } from '../helpers';
-import { createFakeLayers } from './helpers/generators';
+import { generateFakeLayers } from '../../helpers/helper';
 import { LayerRequestSender } from './helpers/requestSender';
 
 describe('layer', function () {
@@ -44,7 +44,7 @@ describe('layer', function () {
     });
 
     it('should return 200 status code and the existing layers', async function () {
-      const layersToInsert = createFakeLayers();
+      const layersToInsert = generateFakeLayers();
       await layerRepository.insert(layersToInsert);
       const insertedLayers: Layer[] = layersToInsert.map((layer) => {
         const { layerId, layerName, geometryTypes } = layer;

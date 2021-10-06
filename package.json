@@ -67,11 +67,11 @@
   "devDependencies": {
     "@commitlint/cli": "^9.1.1",
     "@commitlint/config-conventional": "^10.0.0",
-    "@map-colonies/eslint-config": "^2.1.0",
+    "@map-colonies/eslint-config": "^2.2.1",
     "@map-colonies/prettier-config": "0.0.1",
     "@map-colonies/standard-version-update-helm-version": "^2.0.1",
     "@map-colonies/standard-version-update-openapi3-version": "0.0.1",
-    "@redocly/openapi-cli": "^1.0.0-beta.25",
+    "@redocly/openapi-cli": "^1.0.0-beta.62",
     "@types/compression": "^1.7.0",
     "@types/config": "0.0.36",
     "@types/express": "^4.17.12",

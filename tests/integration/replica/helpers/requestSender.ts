@@ -1,7 +1,12 @@
 import * as supertest from 'supertest';
 import { BaseReplicaFilter } from '../../../../src/replica/models/replicaFilter';
 import { convertObjectToSnakeCase } from '../../helpers';
-import { StringifiedPrivateReplicaFilter, StringifiedPublicReplicaFilter, StringifiedReplica, StringifiedReplicaUpdate } from './generators';
+import {
+  StringifiedPrivateReplicaFilter,
+  StringifiedPublicReplicaFilter,
+  StringifiedReplica,
+  StringifiedReplicaUpdate,
+} from '../../../helpers/helper';
 
 export class ReplicaRequestSender {
   public constructor(private readonly app: Express.Application) {}
