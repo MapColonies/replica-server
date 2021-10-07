@@ -115,5 +115,4 @@ export const convertReplicaToUrls = (replica: StringifiedReplica, fileIds: strin
   }
   const header = `${protocol}://${host}:${port}`;
   return createUrlPaths(header, [bucketOrProjectIdWithBucket, layerId.toString(), geometryType], fileIds);
-  // return fileIds.map((fileId) => `${protocol}://${host}:${port}/${bucketOrProjectIdWithBucket}/${layerId}/${geometryType}/${fileId}`);
 };
