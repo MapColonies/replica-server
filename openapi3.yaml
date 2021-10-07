@@ -1,59 +1,434 @@
 openapi: 3.0.1
 info:
-  title: service-name
-  description: basic template for map colonies service
+  title: replica-server
+  description: A RESTful API for querying and saving geographic replicas (snapshot and deltas)
   version: 1.0.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-
+tags:
+  - name: public
+    description: the endpoints which are exposed to the client
+  - name: private
+    description: the endpoints which are exposed only to inner services
 paths:
-  /anotherResource:
+  /replica:
     get:
-      operationId: getAnotherResource
+      operationId: getReplicas
       tags:
-        - anotherResource
-      summary: gets the resource
+        - public
+      summary: Get replicas by required and optional filters
+      parameters:
+        - in: query
+          name: exclusive_from
+          schema:
+            $ref: '#/components/schemas/replicaDate'
+          description: The lower limit of filtering by date. the filter is exclusive.
+        - in: query
+          name: to
+          schema:
+            $ref: '#/components/schemas/replicaDate'
+          description: The upper limit of filtering by date. the filter is exclusive.
+        - in: query
+          name: sort
+          description: The order in which the results are sorted based on their timestamp
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+        - in: query
+          name: geometry_type
+          description: return results with the following geometry type - point, linestring or polygon
+          required: true
+          schema:
+            $ref: '#/components/schemas/geometryType'
+        - in: query
+          name: replica_type
+          description: return replicas of the following type - snapshot, delta
+          required: true
+          schema:
+            $ref: '#/components/schemas/replicaType'
+        - in: query
+          name: layer_id
+          description: return results from the following layer
+          required: true
+          schema:
+            $ref: '#/components/schemas/layerId'
+      security:
+        - ApiKeyAuth: []
       responses:
-        200:
-          description: OK
+        '200':
+          description: All the replicas returned by the search
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/anotherResource'
-  /resourceName:
-    get:
-      operationId: getResourceName
-      tags:
-        - resourceName
-      summary: gets the resource
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/resource'
+                type: array
+                items:
+                  $ref: '#/components/schemas/replica'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
     post:
-      operationId: createResource
+      operationId: postReplica
       tags:
-        - resourceName
-      summary: creates a new record of type resource
+        - private
+      summary: Create a new replica
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/replica'
+                - type: object
+                  required:
+                    - replicaId
+                    - replicaType
+                    - geometryType
+                    - layerId
+                    - bucketName
+                    - timestamp
+      security:
+        - ApiKeyAuth: []
       responses:
-        201:
-          description: created
+        '201':
+          description: Created
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      operationId: patchReplicas
+      tags:
+        - private
+      summary: Update all replicas based on condition
+      parameters:
+        - $ref: '#/components/parameters/filterOptions'
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/replicaMetadata'
+      responses:
+        '200':
+          description: Updated
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      operationId: deleteReplicas
+      tags:
+        - private
+      summary: Delete replicas by filters
+      parameters:
+        - $ref: '#/components/parameters/filterOptions'
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/resource'
-        400:
-          description: Bad Request
+                type: array
+                items:
+                  $ref: '#/components/schemas/replica'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+  /replica/latest:
+    get:
+      operationId: getLatestReplica
+      tags:
+        - public
+      summary: Get the latest replica for a layer and geometry type
+      parameters:
+        - in: query
+          name: geometry_type
+          description: return results with the following geometry type - point, linestring or polygon
+          required: true
+          schema:
+            $ref: '#/components/schemas/geometryType'
+        - in: query
+          name: replica_type
+          description: return replicas of the following type - snapshot, delta
+          required: true
+          schema:
+            $ref: '#/components/schemas/replicaType'
+        - in: query
+          name: layer_id
+          description: return results from the following layer
+          required: true
+          schema:
+            $ref: '#/components/schemas/layerId'
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: All the replicas returned by the search
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: '#/components/schemas/replica'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+  /replica/{replicaId}:
+    get:
+      operationId: getReplicaById
+      tags:
+        - public
+      summary: Get a replica by id
+      parameters:
+        - in: path
+          name: replicaId
+          schema:
+            $ref: '#/components/schemas/replicaId'
+          required: true
+          description: id of the replica to get
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/replica'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+    patch:
+      operationId: patchReplicaById
+      tags:
+        - private
+      summary: update replica by id
+      parameters:
+        - in: path
+          name: replicaId
+          schema:
+            $ref: '#/components/schemas/replicaId'
+          required: true
+          description: id of the replica to patch
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/replicaMetadata'
+      responses:
+        '200':
+          description: Updated
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      operationId: deleteReplicaById
+      tags:
+        - private
+      summary: delete replica by id
+      parameters:
+        - in: path
+          name: replicaId
+          schema:
+            $ref: '#/components/schemas/replicaId'
+          required: true
+          description: id of the replica to delete
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/replica'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+  /replica/{replicaId}/file:
+    post:
+      operationId: postFile
+      tags:
+        - private
+      summary: Create a new File for a Replica
+      parameters:
+        - in: path
+          name: replicaId
+          schema:
+            $ref: '#/components/schemas/replicaId'
+          required: true
+          description: id of the replica to create file for
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileId:
+                  $ref: '#/components/schemas/fileId'
+      responses:
+        '201':
+          description: Created
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
+  /layers:
+    get:
+      operationId: getLayers
+      tags:
+        - public
+      summary: Get a list of available layers and their corresponding geometry types
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    layerId:
+                      $ref: '#/components/schemas/layerId'
+                    layerName:
+                      $ref: '#/components/schemas/layerName'
+                    geometryTypes:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/geometryType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        5XX:
+          $ref: '#/components/responses/UnexpectedError'
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+  parameters:
+    filterOptions:
+      name: filter
+      in: query
+      required: true
+      schema:
+        type: object
+        properties:
+          replica_type:
+            $ref: '#/components/schemas/replicaType'
+          geometry_type:
+            $ref: '#/components/schemas/geometryType'
+          layer_id:
+            $ref: '#/components/schemas/layerId'
+          is_hidden:
+            $ref: '#/components/schemas/isHidden'
+          exclusive_from:
+            $ref: '#/components/schemas/replicaDate'
+          to:
+            $ref: '#/components/schemas/replicaDate'
+        additionalProperties: false
+        minProperties: 1
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    Unauthorized:
+      description: Unauthorized Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    UnexpectedError:
+      description: Unexpected Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
   schemas:
+    geometryType:
+      type: string
+      enum:
+        - point
+        - linestring
+        - polygon
+    replicaType:
+      type: string
+      enum:
+        - snapshot
+        - delta
+    replicaDate:
+      type: string
+      format: date-time
+    replicaId:
+      type: string
+      format: uuid
+    fileId:
+      type: string
+      format: uuid
+    layerId:
+      type: number
+    layerName:
+      type: string
+    isHidden:
+      type: boolean
     error:
       type: object
       required:
@@ -61,28 +436,43 @@ components:
       properties:
         message:
           type: string
-    resource:
+    baseReplica:
       type: object
-      required:
-        - id
-        - name
-        - description
       properties:
-        id:
+        timestamp:
+          $ref: '#/components/schemas/replicaDate'
+        layerId:
           type: number
-          format: int64
-        name:
+          format: int32
+        geometryType:
+          $ref: '#/components/schemas/geometryType'
+        bucketName:
           type: string
-        description:
-          type: string
-    anotherResource:
-      type: object
-      required:
-        - kind
-        - isAlive
-        - description
-      properties:
-        kind:
-          type: string
-        isAlive:
-          type: boolean
+          minLength: 3
+          maxLength: 63
+          writeOnly: true
+        replicaType:
+          $ref: '#/components/schemas/replicaType'
+        urls:
+          type: array
+          items:
+            type: string
+            example: http://map.co/file.zip
+          readOnly: true
+    replicaMetadata:
+      allOf:
+        - $ref: '#/components/schemas/baseReplica'
+        - type: object
+          properties:
+            isHidden:
+              allOf:
+                - $ref: '#/components/schemas/isHidden'
+    replica:
+      allOf:
+        - $ref: '#/components/schemas/baseReplica'
+        - type: object
+          properties:
+            replicaId:
+              allOf:
+                - writeOnly: true
+                - $ref: '#/components/schemas/replicaId'

@@ -10,4 +10,9 @@ export enum Services {
   CONFIG = 'IConfig',
   TRACER = 'TRACER',
   METER = 'METER',
+  OBJECT_STORAGE = 'IObjectStorage',
 }
+
+export const BUCKET_NAME_MIN_LENGTH_LIMIT = 3;
+
+export const BUCKET_NAME_MAX_LENGTH_LIMIT = 63;

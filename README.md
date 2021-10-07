@@ -1,4 +1,4 @@
-# Map Colonies typescript service template
+# replica-server
 
 ----------------------------------
 
@@ -10,7 +10,7 @@
 
 ----------------------------------
 
-This is a basic repo template for building new MapColonies web services in Typescript.
+A RESTful API for querying and saving geographic replicas (snapshot and deltas)
 
 ### Template Features:
 
