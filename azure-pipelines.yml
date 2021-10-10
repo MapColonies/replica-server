@@ -37,6 +37,8 @@ stages:
               dockerfilePaths:
                 - name: replica-server
                   path: '$(Build.SourcesDirectory)/Dockerfile'
+                 - name: replica-server-migrations
+                  path: '$(Build.SourcesDirectory)/migrations.Dockerfile'
               # the url of the helm registry Default [ACR non prod registry url]
               # helmrRegistryUrl:
               # the path to the helm folder. Default is [root Folder]/helm
