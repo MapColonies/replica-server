@@ -12,50 +12,6 @@
 
 A RESTful API for querying and saving geographic replicas (snapshot and deltas)
 
-### Template Features:
-
-- eslint configuration by [@map-colonies/eslint-config](https://github.com/MapColonies/eslint-config)
-
-- prettier configuration by [@map-colonies/prettier-config](https://github.com/MapColonies/prettier-config)
-
-- jest
-
-- .nvmrc
-
-- Multi stage producton-ready Dockerfile
-
-- commitlint
-
-- git hooks
-
-- logging by [@map-colonies/js-logger](https://github.com/MapColonies/js-logger)
-
-- OpenAPI request validation
-
-- config load with [node-config](https://www.npmjs.com/package/node-config)
-
-- Tracing and metrics by [@map-colonies/telemetry](https://github.com/MapColonies/telemetry)
-
-- github templates
-
-- bug report
-
-- feature request
-
-- pull request
-
-- github actions
-
-- on pull_request
-
-- LGTM
-
-- test
-
-- lint
-
-- snyk
-
 ## API
 Checkout the OpenAPI spec [here](/openapi3.yaml)
 
