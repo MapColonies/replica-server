@@ -135,7 +135,7 @@ describe('ReplicaManager', () => {
     });
 
     it('rejects if the replica with the given id does not exist', async function () {
-      findOneReplicaMock.mockReturnValue(undefined);
+      findOneReplicaWithFilesMock.mockReturnValue(null);
 
       const getReplicaByIdPromise = replicaManager.getReplicaById(faker.datatype.uuid());
 
@@ -169,7 +169,7 @@ describe('ReplicaManager', () => {
     });
 
     it('rejects if the replica with the given id does not exist', async function () {
-      findOneReplicaMock.mockReturnValue(undefined);
+      findLatestReplicaWithFilesMock.mockResolvedValue(null);
 
       const getLatestReplicaPromise = replicaManager.getLatestReplica(generateFakeBaseFilter());
 
@@ -179,8 +179,8 @@ describe('ReplicaManager', () => {
 
   describe('#createReplica', () => {
     it('resolves without errors if the replica id does not already exists', async function () {
-      findOneReplicaMock.mockResolvedValue(undefined);
-      createReplicaMock.mockReturnValue(undefined);
+      findOneReplicaMock.mockResolvedValue(null);
+      createReplicaMock.mockReturnValue(null);
       const replica = generateFakeReplica();
       const { timestamp, ...rest } = replica;
 
@@ -204,8 +204,8 @@ describe('ReplicaManager', () => {
     it('resolves without errors if the file id does not already exists', async function () {
       const replica = generateFakeReplica();
       findOneReplicaMock.mockResolvedValue(replica);
-      findOneFileMock.mockResolvedValue(undefined);
-      createFileOnReplicaMock.mockReturnValue(undefined);
+      findOneFileMock.mockResolvedValue(null);
+      createFileOnReplicaMock.mockReturnValue(null);
 
       const createFileOnReplicaPromise = replicaManager.createFileOnReplica(replica.replicaId, faker.datatype.uuid());
 
@@ -214,7 +214,7 @@ describe('ReplicaManager', () => {
 
     it('rejects if the replica with the given id does not exist', async function () {
       const replica = generateFakeReplica();
-      findOneReplicaMock.mockResolvedValue(undefined);
+      findOneReplicaMock.mockResolvedValue(null);
 
       const createFileOnReplicaPromise = replicaManager.createFileOnReplica(replica.replicaId, faker.datatype.uuid());
 
@@ -244,7 +244,7 @@ describe('ReplicaManager', () => {
     });
 
     it('rejects if the replica with the given id does not exist', async function () {
-      findOneReplicaMock.mockResolvedValue(undefined);
+      findOneReplicaMock.mockResolvedValue(null);
 
       const updateReplicaPromise = replicaManager.updateReplica(faker.datatype.uuid(), {});
 
@@ -288,7 +288,7 @@ describe('ReplicaManager', () => {
     });
 
     it('rejects if the replica with the given id does not exist', async function () {
-      deleteOneReplicaMock.mockResolvedValue(undefined);
+      deleteOneReplicaMock.mockResolvedValue(null);
 
       const deleteReplicaPromise = replicaManager.deleteReplica(faker.datatype.uuid());
 
