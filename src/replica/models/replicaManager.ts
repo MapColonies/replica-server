@@ -28,7 +28,7 @@ export class ReplicaManager {
 
     const replicaWithFiles = await this.replicaRepository.findOneReplicaWithFiles(replicaId);
     if (replicaWithFiles === undefined) {
-      this.logger.error({ msg: 'could not find replica by id', replicaId })
+      this.logger.error({ msg: 'could not find replica by id', replicaId });
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
 
@@ -44,7 +44,7 @@ export class ReplicaManager {
   }
 
   public async getLatestReplica(replicaFilter: BaseReplicaFilter): Promise<ReplicaResponse> {
-    this.logger.info({ msg: 'getting latest replica by filter', ...replicaFilter })
+    this.logger.info({ msg: 'getting latest replica by filter', ...replicaFilter });
 
     const latestReplicaWithFiles = await this.replicaRepository.findLatestReplicaWithFiles(replicaFilter);
     if (latestReplicaWithFiles === undefined) {
@@ -54,7 +54,12 @@ export class ReplicaManager {
       throw new ReplicaNotFoundError(`replica of type ${replicaType} with geometry type of ${geometryType} on layer ${layerId} was not found`);
     }
 
-    this.logger.debug({ msg: 'fetched lastest replica', ...replicaFilter, replicaId: latestReplicaWithFiles.replicaId, filesCount: latestReplicaWithFiles.files.length });
+    this.logger.debug({
+      msg: 'fetched lastest replica',
+      ...replicaFilter,
+      replicaId: latestReplicaWithFiles.replicaId,
+      filesCount: latestReplicaWithFiles.files.length,
+    });
 
     const { layerId, replicaType, geometryType, timestamp } = latestReplicaWithFiles;
     const urls = this.getReplicaUrls(latestReplicaWithFiles);
