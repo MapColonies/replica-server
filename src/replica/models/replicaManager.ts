@@ -2,9 +2,9 @@ import { Logger } from '@map-colonies/js-logger';
 import { inject, injectable } from 'tsyringe';
 import { Services } from '../../common/constants';
 import { IObjectStorageConfig } from '../../common/interfaces';
-import { FILE_REPOSITORY_SYMBOL, IFileRepository } from '../DAL/IFileRepository';
-import { IReplicaRepository, REPLICA_REPOSITORY_SYMBOL } from '../DAL/IReplicaRepository';
 import { createUrlPaths, isStringUndefinedOrEmpty } from '../../common/utils';
+import { FILE_CUSTOM_REPOSITORY_SYMBOL, FileRepository } from '../DAL/typeorm/fileRepository';
+import { ReplicaRepository, REPLICA_CUSTOM_REPOSITORY_SYMBOL } from '../DAL/typeorm/replicaRepository';
 import { ReplicaNotFoundError, ReplicaAlreadyExistsError, FileAlreadyExistsError } from './errors';
 import { ReplicaCreateBody, ReplicaMetadata, ReplicaResponse, ReplicaWithFiles } from './replica';
 import { BaseReplicaFilter, PrivateReplicaFilter, PublicReplicaFilter } from './replicaFilter';
@@ -14,8 +14,8 @@ export class ReplicaManager {
   private readonly urlHeader: string;
 
   public constructor(
-    @inject(REPLICA_REPOSITORY_SYMBOL) private readonly replicaRepository: IReplicaRepository,
-    @inject(FILE_REPOSITORY_SYMBOL) private readonly fileRepository: IFileRepository,
+    @inject(REPLICA_CUSTOM_REPOSITORY_SYMBOL) private readonly replicaRepository: ReplicaRepository,
+    @inject(FILE_CUSTOM_REPOSITORY_SYMBOL) private readonly fileRepository: FileRepository,
     @inject(Services.LOGGER) private readonly logger: Logger,
     @inject(Services.OBJECT_STORAGE) private readonly objectStorageConfig: IObjectStorageConfig
   ) {
@@ -27,7 +27,7 @@ export class ReplicaManager {
     this.logger.info({ msg: 'getting replica by id', replicaId });
 
     const replicaWithFiles = await this.replicaRepository.findOneReplicaWithFiles(replicaId);
-    if (replicaWithFiles === undefined) {
+    if (replicaWithFiles === null) {
       this.logger.error({ msg: 'could not find replica by id', replicaId });
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
@@ -47,9 +47,8 @@ export class ReplicaManager {
     this.logger.info({ msg: 'getting latest replica by filter', ...replicaFilter });
 
     const latestReplicaWithFiles = await this.replicaRepository.findLatestReplicaWithFiles(replicaFilter);
-    if (latestReplicaWithFiles === undefined) {
+    if (latestReplicaWithFiles === null) {
       this.logger.error({ msg: 'could not find latest replica', ...replicaFilter });
-
       const { replicaType, geometryType, layerId } = replicaFilter;
       throw new ReplicaNotFoundError(`replica of type ${replicaType} with geometry type of ${geometryType} on layer ${layerId} was not found`);
     }
@@ -108,7 +107,7 @@ export class ReplicaManager {
     this.logger.info({ msg: 'creating new file on replica', replicaId, fileId });
 
     const replica = await this.replicaRepository.findOneReplica(replicaId);
-    if (replica === undefined) {
+    if (replica === null) {
       this.logger.error({ msg: 'could not find replica to create a file on it', replicaId });
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
@@ -128,8 +127,7 @@ export class ReplicaManager {
     this.logger.info({ msg: 'updating replica', replicaId });
 
     const replica = await this.replicaRepository.findOneReplica(replicaId);
-
-    if (replica === undefined) {
+    if (replica === null) {
       this.logger.error({ msg: 'could not update replica, replica with specified replica id was not found', replicaId });
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }
@@ -147,8 +145,7 @@ export class ReplicaManager {
     this.logger.info({ msg: 'deleting replica', replicaId });
 
     const deletedReplica = await this.replicaRepository.deleteOneReplica(replicaId);
-
-    if (deletedReplica === undefined) {
+    if (deletedReplica === null) {
       this.logger.error({ msg: 'could not delete replica, replica with specified replica id was not found', replicaId });
       throw new ReplicaNotFoundError(`replica with id ${replicaId} was not found`);
     }

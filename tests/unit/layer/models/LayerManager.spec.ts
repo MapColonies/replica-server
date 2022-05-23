@@ -1,5 +1,5 @@
 import jsLogger from '@map-colonies/js-logger';
-import { ILayerRepository } from '../../../../src/layer/DAL/ILayerRepository';
+import { LayerRepository } from '../../../../src/layer/DAL/typeorm/layerRepository';
 import { LayerManager } from '../../../../src/layer/models/layerManager';
 import { generateFakeLayers } from '../../../helpers/helper';
 
@@ -10,7 +10,7 @@ describe('LayerManager', () => {
 
   beforeAll(function () {
     findAllLayersMock = jest.fn();
-    const layerRepository: ILayerRepository = { findAllLayers: findAllLayersMock };
+    const layerRepository: LayerRepository = { findAllLayers: findAllLayersMock } as unknown as LayerRepository;
     layerManager = new LayerManager(layerRepository, jsLogger({ enabled: false }));
   });
 

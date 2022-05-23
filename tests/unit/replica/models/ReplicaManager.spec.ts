@@ -1,7 +1,5 @@
 import faker from 'faker';
 import jsLogger from '@map-colonies/js-logger';
-import { IFileRepository } from '../../../../src/replica/DAL/IFileRepository';
-import { IReplicaRepository } from '../../../../src/replica/DAL/IReplicaRepository';
 import { ReplicaManager } from '../../../../src/replica/models/replicaManager';
 import {
   generateFakeBaseFilter,
@@ -14,6 +12,8 @@ import {
   generateFakePublicFilter,
 } from '../../../helpers/helper';
 import { FileAlreadyExistsError, ReplicaAlreadyExistsError, ReplicaNotFoundError } from '../../../../src/replica/models/errors';
+import { ReplicaRepository } from '../../../../src/replica/DAL/typeorm/replicaRepository';
+import { FileRepository } from '../../../../src/replica/DAL/typeorm/fileRepository';
 
 let replicaManager: ReplicaManager;
 let replicaManagerWithProjectId: ReplicaManager;
@@ -44,7 +44,7 @@ describe('ReplicaManager', () => {
     deleteReplicasMock = jest.fn();
     findOneFileMock = jest.fn();
     createFileOnReplicaMock = jest.fn();
-    const replicaRepository: IReplicaRepository = {
+    const replicaRepository: ReplicaRepository = {
       findOneReplica: findOneReplicaMock,
       findOneReplicaWithFiles: findOneReplicaWithFilesMock,
       findReplicas: findReplicasMock,
@@ -54,8 +54,8 @@ describe('ReplicaManager', () => {
       updateReplicas: updateReplicasMock,
       deleteOneReplica: deleteOneReplicaMock,
       deleteReplicas: deleteReplicasMock,
-    };
-    const fileRepository: IFileRepository = { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock };
+    } as unknown as ReplicaRepository;
+    const fileRepository: FileRepository = { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } as unknown as FileRepository;
     replicaManager = new ReplicaManager(replicaRepository, fileRepository, jsLogger({ enabled: false }), generateMockObjectStorageConfig());
     replicaManagerWithProjectId = new ReplicaManager(
       replicaRepository,

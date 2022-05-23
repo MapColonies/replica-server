@@ -1,38 +1,39 @@
 import { hostname } from 'os';
 import { readFileSync } from 'fs';
 import { HealthCheck } from '@godaddy/terminus';
-import { Connection, ConnectionOptions, createConnection } from 'typeorm';
+import { DataSourceOptions, DataSource } from 'typeorm';
 import { Layer } from '../../layer/DAL/typeorm/layer';
 import { File } from '../../replica/DAL/typeorm/file';
 import { Replica } from '../../replica/DAL/typeorm/replica';
 import { DbConfig } from '../interfaces';
 import { promiseTimeout } from '../utils/promiseTimeout';
 
-let connectionSingleton: Connection | undefined;
+let connectionSingleton: DataSource | undefined;
 
 const DB_TIMEOUT = 5000;
 
 export const DB_ENTITIES = [Replica, File, Layer];
 
-export const createConnectionOptions = (dbConfig: DbConfig): ConnectionOptions => {
-  const { enableSslAuth, sslPaths, ...connectionOptions } = dbConfig;
+export const createConnectionOptions = (dbConfig: DbConfig): DataSourceOptions => {
+  const { enableSslAuth, sslPaths, ...dataSourceOptions } = dbConfig;
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  connectionOptions.extra = { application_name: `${hostname()}-${process.env.NODE_ENV ?? 'unknown_env'}` };
-  if (enableSslAuth && connectionOptions.type === 'postgres') {
-    connectionOptions.password = undefined;
-    connectionOptions.ssl = { key: readFileSync(sslPaths.key), cert: readFileSync(sslPaths.cert), ca: readFileSync(sslPaths.ca) };
+  dataSourceOptions.extra = { application_name: `${hostname()}-${process.env.NODE_ENV ?? 'unknown_env'}` };
+  if (enableSslAuth && dataSourceOptions.type === 'postgres') {
+    dataSourceOptions.password = undefined;
+    dataSourceOptions.ssl = { key: readFileSync(sslPaths.key), cert: readFileSync(sslPaths.cert), ca: readFileSync(sslPaths.ca) };
   }
-  return { entities: [...DB_ENTITIES, '**/DAL/typeorm/*.js'], ...connectionOptions };
+  return { entities: [...DB_ENTITIES, '**/DAL/typeorm/*.js'], ...dataSourceOptions };
 };
 
-export const initConnection = async (dbConfig: DbConfig): Promise<Connection> => {
-  if (connectionSingleton === undefined || !connectionSingleton.isConnected) {
-    connectionSingleton = await createConnection(createConnectionOptions(dbConfig));
+export const initConnection = async (dbConfig: DbConfig): Promise<DataSource> => {
+  if (connectionSingleton === undefined || !connectionSingleton.isInitialized) {
+    connectionSingleton = new DataSource(createConnectionOptions(dbConfig));
+    await connectionSingleton.initialize();
   }
   return connectionSingleton;
 };
 
-export const getDbHealthCheckFunction = (connection: Connection): HealthCheck => {
+export const getDbHealthCheckFunction = (connection: DataSource): HealthCheck => {
   return async (): Promise<void> => {
     const check = connection.query('SELECT 1').then(() => {
       return;

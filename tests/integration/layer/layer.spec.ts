@@ -1,10 +1,10 @@
 import config from 'config';
 import httpStatusCodes from 'http-status-codes';
 import { container } from 'tsyringe';
-import { Connection, QueryFailedError, Repository } from 'typeorm';
+import { QueryFailedError, Repository, DataSource } from 'typeorm';
 import { getApp } from '../../../src/app';
-import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/ILayerRepository';
 import { Layer as LayerEntity } from '../../../src/layer/DAL/typeorm/layer';
+import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/typeorm/layerRepository';
 import { Layer } from '../../../src/layer/models/layer';
 import { initConnection } from '../../../src/common/db';
 import { DbConfig } from '../../../src/common/interfaces';
@@ -15,22 +15,22 @@ import { LayerRequestSender } from './helpers/requestSender';
 describe('layer', function () {
   let requestSender: LayerRequestSender;
   let mockLayerRequestSender: LayerRequestSender;
-  let connection: Connection;
+  let connection: DataSource;
   let layerRepository: Repository<LayerEntity>;
 
   beforeAll(async function () {
     const registerOptions = getBaseRegisterOptions();
 
-    const connectionOptions = config.get<DbConfig>('db');
-    connection = await initConnection(connectionOptions);
-    registerOptions.override.push({ token: Connection, provider: { useValue: connection } });
+    const dataSourceOptions = config.get<DbConfig>('db');
+    connection = await initConnection(dataSourceOptions);
+    registerOptions.override.push({ token: DataSource, provider: { useValue: connection } });
     const app = await getApp(registerOptions);
     requestSender = new LayerRequestSender(app);
     layerRepository = connection.getRepository(LayerEntity);
   });
 
   afterAll(async function () {
-    await connection.close();
+    await connection.destroy();
     container.reset();
   });
 

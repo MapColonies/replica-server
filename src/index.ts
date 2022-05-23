@@ -9,10 +9,8 @@ import config from 'config';
 import { DEFAULT_SERVER_PORT, Services } from './common/constants';
 
 import { getApp } from './app';
-import { IServerConfig } from './common/interfaces';
 
-const serverConfig = config.get<IServerConfig>('server');
-const port: number = parseInt(serverConfig.port) || DEFAULT_SERVER_PORT;
+const port: number = config.get<number>('server.port') || DEFAULT_SERVER_PORT;
 
 void getApp()
   .then((app) => {

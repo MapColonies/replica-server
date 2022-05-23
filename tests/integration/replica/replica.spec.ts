@@ -2,19 +2,17 @@
 import config from 'config';
 import httpStatusCodes, { StatusCodes } from 'http-status-codes';
 import { container } from 'tsyringe';
-import { Connection, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import faker from 'faker';
 import { getApp } from '../../../src/app';
 import { Replica as ReplicaEntity } from '../../../src/replica/DAL/typeorm/replica';
 import { BOTTOM_FROM, createFakeDateBetweenBottomAndTop, getBaseRegisterOptions, sortByOrderFilter, TOP_TO } from '../helpers';
 import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, Services } from '../../../src/common/constants';
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
-import { REPLICA_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/IReplicaRepository';
 import { DbConfig } from '../../../src/common/interfaces';
 import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
 import { initConnection } from '../../../src/common/db';
-import { FILE_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/IFileRepository';
 import {
   generateFakeBaseFilter,
   generateFakePrivateFilter,
@@ -27,20 +25,22 @@ import {
   convertReplicaToResponse,
   convertReplicaToUrls,
 } from '../../helpers/helper';
+import { FILE_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeorm/fileRepository';
+import { REPLICA_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeorm/replicaRepository';
 import { ReplicaRequestSender } from './helpers/requestSender';
 
 describe('replica', function () {
   let requestSender: ReplicaRequestSender;
   let mockReplicaRequestSender: ReplicaRequestSender;
-  let connection: Connection;
+  let connection: DataSource;
   let replicaRepository: Repository<ReplicaEntity>;
 
   beforeAll(async function () {
     const registerOptions = getBaseRegisterOptions();
 
-    const connectionOptions = config.get<DbConfig>('db');
-    connection = await initConnection(connectionOptions);
-    registerOptions.override.push({ token: Connection, provider: { useValue: connection } });
+    const dataSourceOptions = config.get<DbConfig>('db');
+    connection = await initConnection(dataSourceOptions);
+    registerOptions.override.push({ token: DataSource, provider: { useValue: connection } });
     registerOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } });
     const app = await getApp(registerOptions);
     requestSender = new ReplicaRequestSender(app);
@@ -48,7 +48,7 @@ describe('replica', function () {
   });
 
   afterAll(async function () {
-    await connection.close();
+    await connection.destroy();
     container.reset();
   });
 
@@ -938,7 +938,7 @@ describe('replica', function () {
         const findOneReplicaWithFilesMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findOneReplicaWithFiles: findOneReplicaWithFilesMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -956,7 +956,7 @@ describe('replica', function () {
         const findLatestReplicaWithFilesMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findLatestReplicaWithFiles: findLatestReplicaWithFilesMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -974,7 +974,7 @@ describe('replica', function () {
         const findReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findReplicas: findReplicasMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -994,11 +994,11 @@ describe('replica', function () {
         const findOneFileMock = jest.fn().mockResolvedValue(false);
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findOneReplica: findOneReplicaMock } },
         });
         mockRegisterOptions.override.push({
-          token: FILE_REPOSITORY_SYMBOL,
+          token: FILE_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -1017,7 +1017,7 @@ describe('replica', function () {
         const findOneReplicaMock = jest.fn().mockResolvedValue(false);
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { createReplica: createReplicaMock, findOneReplica: findOneReplicaMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -1036,7 +1036,7 @@ describe('replica', function () {
         const findOneReplicaMock = jest.fn().mockResolvedValue(true);
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { updateOneReplica: updateOneReplicaMock, findOneReplica: findOneReplicaMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -1054,7 +1054,7 @@ describe('replica', function () {
         const updateReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { updateReplicas: updateReplicasMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -1072,7 +1072,7 @@ describe('replica', function () {
         const deleteOneReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { deleteOneReplica: deleteOneReplicaMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
@@ -1090,7 +1090,7 @@ describe('replica', function () {
         const deleteReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
         mockRegisterOptions.override.push({
-          token: REPLICA_REPOSITORY_SYMBOL,
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { deleteReplicas: deleteReplicasMock } },
         });
         const mockApp = await getApp(mockRegisterOptions);
