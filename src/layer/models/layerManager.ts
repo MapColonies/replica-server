@@ -11,6 +11,11 @@ export class LayerManager {
     @inject(Services.LOGGER) private readonly logger: Logger
   ) {}
   public async getAllLayers(): Promise<Layer[]> {
-    return this.layerRepository.findAllLayers();
+    this.logger.info('getting all layers');
+
+    const layers = await this.layerRepository.findAllLayers();
+
+    this.logger.debug({ msg: 'fetched layers', count: layers.length });
+    return layers;
   }
 }

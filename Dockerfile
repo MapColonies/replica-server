@@ -1,5 +1,4 @@
-FROM node:12 as build
-
+FROM node:16 as build
 
 WORKDIR /tmp/buildApp
 
@@ -9,13 +8,12 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM node:12.20.1-alpine3.9 as production
+FROM node:16.14.2-alpine3.14 as production
 
 RUN apk add dumb-init
 
 ENV NODE_ENV=production
 ENV SERVER_PORT=8080
-
 
 WORKDIR /usr/src/app
 
@@ -25,7 +23,6 @@ RUN npm ci --only=production
 
 COPY --chown=node:node --from=build /tmp/buildApp/dist .
 COPY --chown=node:node ./config ./config
-
 
 USER node
 EXPOSE 8080

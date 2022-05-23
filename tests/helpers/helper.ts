@@ -77,7 +77,7 @@ export const generateFakeBaseFilter = (params: Partial<BaseReplicaFilter> = {}):
   return {
     replicaType: params.replicaType ?? faker.random.arrayElement(Object.values(ReplicaType)),
     geometryType: params.geometryType ?? faker.random.arrayElement(Object.values(GeometryType)),
-    layerId: params.layerId ?? faker.datatype.number(),
+    layerId: params.layerId ?? faker.datatype.number({ min: 1 }),
   };
 };
 

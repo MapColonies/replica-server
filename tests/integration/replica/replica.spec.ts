@@ -584,7 +584,7 @@ describe('replica', function () {
           generateFakeBaseFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeBaseFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.layer_id should be number`],
+        [generateFakeBaseFilter({ layerId: faker.random.word() as unknown as number }), `request.query.layer_id should be number`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -623,8 +623,7 @@ describe('replica', function () {
       });
 
       it('should return 404 if no replica was found based on the query filter', async function () {
-        await replicaRepository.clear();
-        const filter = generateFakeBaseFilter();
+        const filter = generateFakeBaseFilter({ layerId: -1 });
         const { replicaType, geometryType, layerId } = filter;
         const response = await requestSender.getLatestReplica(filter);
 
@@ -636,8 +635,7 @@ describe('replica', function () {
       });
 
       it('should return 404 if no latest replica was found due to the replica being hidden', async function () {
-        await replicaRepository.clear();
-        const replica = generateFakeReplica();
+        const replica = generateFakeReplica({ layerId: -2 });
         expect(await requestSender.postReplica(replica)).toHaveStatus(StatusCodes.CREATED);
         const fileIds = [faker.datatype.uuid(), faker.datatype.uuid()];
         const { replicaId, bucketName, replicaType, geometryType, layerId } = replica;
@@ -665,7 +663,7 @@ describe('replica', function () {
           generateFakePublicFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePublicFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.layer_id should be number`],
+        [generateFakePublicFilter({ layerId: faker.random.word() as unknown as number }), `request.query.layer_id should be number`],
         [generateFakePublicFilter({ exclusiveFrom: faker.random.word() }), `request.query.exclusive_from should match format "date-time"`],
         [generateFakePublicFilter({ to: faker.random.word() }), `request.query.to should match format "date-time"`],
         [generateFakePublicFilter({ sort: 'bad' as SortFilter }), `request.query.sort should be equal to one of the allowed values: asc, desc`],
@@ -758,7 +756,7 @@ describe('replica', function () {
           generateFakeReplica({ geometryType: faker.random.word() as GeometryType }),
           `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeReplica({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
+        [generateFakeReplica({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
         [generateFakeReplica({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
         [
           generateFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
@@ -805,8 +803,8 @@ describe('replica', function () {
           generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
           `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeReplicaUpdate({ isHidden: (faker.random.word() as unknown) as boolean }), `request.body.isHidden should be boolean`],
-        [generateFakeReplicaUpdate({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
+        [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request.body.isHidden should be boolean`],
+        [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
         [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
         [
           generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
@@ -846,10 +844,10 @@ describe('replica', function () {
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePrivateFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.filter.layer_id should be number`],
+        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request.query.filter.layer_id should be number`],
         [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
         [generateFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
-        [generateFakePrivateFilter({ isHidden: (faker.random.word() as unknown) as boolean }), `request.query.filter.is_hidden should be boolean`],
+        [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request.query.filter.is_hidden should be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -869,8 +867,8 @@ describe('replica', function () {
           generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
           `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeReplicaUpdate({ isHidden: (faker.random.word() as unknown) as boolean }), `request.body.isHidden should be boolean`],
-        [generateFakeReplicaUpdate({ layerId: (faker.random.word() as unknown) as number }), `request.body.layerId should be number`],
+        [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request.body.isHidden should be boolean`],
+        [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
         [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
         [
           generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
@@ -918,10 +916,10 @@ describe('replica', function () {
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
           `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePrivateFilter({ layerId: (faker.random.word() as unknown) as number }), `request.query.filter.layer_id should be number`],
+        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request.query.filter.layer_id should be number`],
         [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
         [generateFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
-        [generateFakePrivateFilter({ isHidden: (faker.random.word() as unknown) as boolean }), `request.query.filter.is_hidden should be boolean`],
+        [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request.query.filter.is_hidden should be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
