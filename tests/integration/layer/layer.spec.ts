@@ -8,26 +8,26 @@ import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/typeorm/layerRep
 import { Layer } from '../../../src/layer/models/layer';
 import { initConnection } from '../../../src/common/db';
 import { DbConfig } from '../../../src/common/interfaces';
-import { getBaseRegisterOptions } from '../helpers';
+import { BEFORE_ALL_TIMEOUT, getBaseRegisterOptions } from '../helpers';
+import { DATA_SOURCE_PROVIDER } from '../../../src/common/db';
 import { generateFakeLayers } from '../../helpers/helper';
 import { LayerRequestSender } from './helpers/requestSender';
 
 describe('layer', function () {
+  let connection: DataSource;
   let requestSender: LayerRequestSender;
   let mockLayerRequestSender: LayerRequestSender;
-  let connection: DataSource;
   let layerRepository: Repository<LayerEntity>;
 
   beforeAll(async function () {
     const registerOptions = getBaseRegisterOptions();
-
     const dataSourceOptions = config.get<DbConfig>('db');
     connection = await initConnection(dataSourceOptions);
-    registerOptions.override.push({ token: DataSource, provider: { useValue: connection } });
+    registerOptions.override.push({ token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } });
     const app = await getApp(registerOptions);
     requestSender = new LayerRequestSender(app);
     layerRepository = connection.getRepository(LayerEntity);
-  });
+  }, BEFORE_ALL_TIMEOUT);
 
   afterAll(async function () {
     await connection.destroy();
@@ -62,10 +62,13 @@ describe('layer', function () {
     it('should return 500 if the db throws an error', async function () {
       const findAllLayersMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
       const mockRegisterOptions = getBaseRegisterOptions();
-      mockRegisterOptions.override.push({
-        token: LAYER_REPOSITORY_SYMBOL,
-        provider: { useValue: { findAllLayers: findAllLayersMock } },
-      });
+      mockRegisterOptions.override.push(
+        {
+          token: LAYER_REPOSITORY_SYMBOL,
+          provider: { useValue: { findAllLayers: findAllLayersMock } },
+        },
+        { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } }
+      );
       const mockApp = await getApp(mockRegisterOptions);
       mockLayerRequestSender = new LayerRequestSender(mockApp);
       const response = await mockLayerRequestSender.getLayers();

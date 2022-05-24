@@ -1,7 +1,7 @@
 {
   "db": {
     "host": "postgres",
-    "schema": "public",
+    "schema": "replica_server",
     "username": "postgres",
     "password": "1234",
     "database": "postgres",

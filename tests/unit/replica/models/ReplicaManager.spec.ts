@@ -55,7 +55,10 @@ describe('ReplicaManager', () => {
       deleteOneReplica: deleteOneReplicaMock,
       deleteReplicas: deleteReplicasMock,
     } as unknown as ReplicaRepository;
-    const fileRepository: FileRepository = { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } as unknown as FileRepository;
+    const fileRepository: FileRepository = {
+      findOneFile: findOneFileMock,
+      createFileOnReplica: createFileOnReplicaMock,
+    } as unknown as FileRepository;
     replicaManager = new ReplicaManager(replicaRepository, fileRepository, jsLogger({ enabled: false }), generateMockObjectStorageConfig());
     replicaManagerWithProjectId = new ReplicaManager(
       replicaRepository,

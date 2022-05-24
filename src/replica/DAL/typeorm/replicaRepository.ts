@@ -2,6 +2,7 @@ import { DataSource, FindOperator, LessThanOrEqual, MoreThan, Raw, FindOptionsWh
 import { FactoryFunction } from 'tsyringe';
 import { Replica, ReplicaMetadata, ReplicaWithFiles } from '../../models/replica';
 import { PublicReplicaFilter, BaseReplicaFilter, PrivateReplicaFilter } from '../../models/replicaFilter';
+import { DATA_SOURCE_PROVIDER } from '../../../common/db';
 import { Replica as ReplicaEntity } from './replica';
 
 const buildTimestampFilter = (from?: Date, to?: Date): FindOperator<Date> | null => {
@@ -107,7 +108,7 @@ const createReplicaRepo = (dataSource: DataSource) => {
 export type ReplicaRepository = ReturnType<typeof createReplicaRepo>;
 
 export const replicaRepositoryFactory: FactoryFunction<ReplicaRepository> = (depContainer) => {
-  return createReplicaRepo(depContainer.resolve<DataSource>(DataSource));
+  return createReplicaRepo(depContainer.resolve<DataSource>(DATA_SOURCE_PROVIDER));
 };
 
 export const REPLICA_CUSTOM_REPOSITORY_SYMBOL = Symbol('REPLICA_CUSTOM_REPOSITORY_SYMBOL');

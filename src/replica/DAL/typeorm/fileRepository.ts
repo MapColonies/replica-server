@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { FactoryFunction } from 'tsyringe';
 import { File } from '../../models/file';
+import { DATA_SOURCE_PROVIDER } from '../../../common/db';
 import { File as FileEntity } from './file';
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -16,7 +17,7 @@ const createFileRepository = (dataSource: DataSource) => {
 };
 
 export const fileRepositoryFactory: FactoryFunction<ReturnType<typeof createFileRepository>> = (depContainer) => {
-  return createFileRepository(depContainer.resolve<DataSource>(DataSource));
+  return createFileRepository(depContainer.resolve<DataSource>(DATA_SOURCE_PROVIDER));
 };
 
 export type FileRepository = ReturnType<typeof createFileRepository>;
