@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import config from 'config';
 import httpStatusCodes, { StatusCodes } from 'http-status-codes';
-import { container } from 'tsyringe';
+import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import faker from 'faker';
+import { Application } from 'express';
 import { getApp } from '../../../src/app';
 import {
   BEFORE_ALL_TIMEOUT,
@@ -20,6 +21,7 @@ import { GeometryType, ReplicaType } from '../../../src/common/enums';
 import { DbConfig } from '../../../src/common/interfaces';
 import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
+import { Replica } from '../../../src/replica/DAL/typeorm/replica';
 import { initConnection } from '../../../src/common/db';
 import {
   generateFakeBaseFilter,
@@ -38,19 +40,25 @@ import { REPLICA_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeo
 import { ReplicaRequestSender } from './helpers/requestSender';
 
 describe('replica', function () {
+  let app: Application;
+  let container: DependencyContainer;
   let connection: DataSource;
   let requestSender: ReplicaRequestSender;
   let mockReplicaRequestSender: ReplicaRequestSender;
 
   beforeAll(async function () {
-    const registerOptions = getBaseRegisterOptions();
     const dataSourceOptions = config.get<DbConfig>('db');
     connection = await initConnection(dataSourceOptions);
+    const replicaRepository = connection.getRepository(Replica);
+    await replicaRepository.delete({});
+
+    const registerOptions = getBaseRegisterOptions();
     registerOptions.override.push(
       { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } },
       { token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } }
     );
-    const app = await getApp(registerOptions);
+
+    [container, app] = await getApp(registerOptions);
     requestSender = new ReplicaRequestSender(app);
   }, BEFORE_ALL_TIMEOUT);
 
@@ -102,7 +110,7 @@ describe('replica', function () {
 
           const mockRegisterOptions = getBaseRegisterOptions();
           mockRegisterOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
-          const mockApp = await getApp(mockRegisterOptions);
+          const [, mockApp] = await getApp(mockRegisterOptions);
           mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
           const response = await mockReplicaRequestSender.getReplicaById(replicaId);
 
@@ -977,7 +985,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicaById(faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -999,7 +1007,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getLatestReplica(generateFakeBaseFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1021,7 +1029,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicas(generateFakePublicFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1049,7 +1057,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.postFile(faker.datatype.uuid(), faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1072,7 +1080,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.postReplica(generateFakeReplica());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1095,7 +1103,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.patchReplica(faker.datatype.uuid(), generateFakeReplicaUpdate());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1117,7 +1125,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.patchReplicas(generateFakePrivateFilter(), generateFakeReplicaUpdate());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1139,7 +1147,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.deleteReplica(faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
@@ -1161,7 +1169,7 @@ describe('replica', function () {
             provider: { useValue: connection },
           }
         );
-        const mockApp = await getApp(mockRegisterOptions);
+        const [, mockApp] = await getApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.deleteReplicas(generateFakePrivateFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);

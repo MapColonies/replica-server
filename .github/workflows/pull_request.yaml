@@ -98,7 +98,7 @@ jobs:
           PGPASSWORD: 1234
 
       - name: Run migrations
-        run: npm run typeorm -- migration:run -d ./dataSource.ts
+        run: npm run typeorm -- migration:run
         env:
           DB_HOST: postgres
           DB_PORT: 5432

@@ -1,32 +1,37 @@
 import config from 'config';
 import httpStatusCodes from 'http-status-codes';
-import { container } from 'tsyringe';
 import { QueryFailedError, Repository, DataSource } from 'typeorm';
+import { Application } from 'express';
+import { DependencyContainer } from 'tsyringe';
 import { getApp } from '../../../src/app';
 import { Layer as LayerEntity } from '../../../src/layer/DAL/typeorm/layer';
 import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/typeorm/layerRepository';
 import { Layer } from '../../../src/layer/models/layer';
-import { initConnection } from '../../../src/common/db';
 import { DbConfig } from '../../../src/common/interfaces';
 import { BEFORE_ALL_TIMEOUT, getBaseRegisterOptions } from '../helpers';
-import { DATA_SOURCE_PROVIDER } from '../../../src/common/db';
+import { DATA_SOURCE_PROVIDER, initConnection } from '../../../src/common/db';
 import { generateFakeLayers } from '../../helpers/helper';
 import { LayerRequestSender } from './helpers/requestSender';
 
 describe('layer', function () {
+  let app: Application;
+  let container: DependencyContainer;
   let connection: DataSource;
   let requestSender: LayerRequestSender;
   let mockLayerRequestSender: LayerRequestSender;
   let layerRepository: Repository<LayerEntity>;
 
   beforeAll(async function () {
-    const registerOptions = getBaseRegisterOptions();
     const dataSourceOptions = config.get<DbConfig>('db');
     connection = await initConnection(dataSourceOptions);
-    registerOptions.override.push({ token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } });
-    const app = await getApp(registerOptions);
-    requestSender = new LayerRequestSender(app);
     layerRepository = connection.getRepository(LayerEntity);
+    await layerRepository.clear();
+
+    const registerOptions = getBaseRegisterOptions();
+    registerOptions.override.push({ token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } });
+
+    [container, app] = await getApp(registerOptions);
+    requestSender = new LayerRequestSender(app);
   }, BEFORE_ALL_TIMEOUT);
 
   afterAll(async function () {
@@ -69,7 +74,7 @@ describe('layer', function () {
         },
         { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } }
       );
-      const mockApp = await getApp(mockRegisterOptions);
+      const [, mockApp] = await getApp(mockRegisterOptions);
       mockLayerRequestSender = new LayerRequestSender(mockApp);
       const response = await mockLayerRequestSender.getLayers();
 

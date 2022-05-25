@@ -5,8 +5,7 @@ import { createConnectionOptions } from './src/common/db';
 
 const dataSourceOptions = config.get<DbConfig>('db');
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const AppDataSource = new DataSource({
+export const appDataSource = new DataSource({
   ...createConnectionOptions(dataSourceOptions),
   entities: ['src/**/DAL/typeorm/*.ts'],
   migrationsTableName: 'migrations_table',
