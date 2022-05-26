@@ -7,6 +7,7 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: [
     '<rootDir>/src/**/*.ts',
+    '!<rootDir>/src/**/DAL/typeorm/*.ts',
     '!*/node_modules/',
     '!/vendor/**',
     '!*/common/**',

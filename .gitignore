@@ -107,3 +107,5 @@ dist
 # Jest
 jest_html_reporters.html
 reports
+
+/**/local.json

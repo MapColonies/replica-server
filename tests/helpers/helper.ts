@@ -12,7 +12,7 @@ type StringifiedReplicaResponse = Omit<ReplicaResponse, 'timestamp'> & { timesta
 
 const generateFakeLayer = (): Layer => {
   return {
-    layerId: faker.datatype.number(),
+    layerId: faker.datatype.number({ min: 1 }),
     geometryTypes: faker.random.arrayElements(Object.values(GeometryType)),
     layerName: faker.random.word(),
   };
@@ -55,7 +55,7 @@ export const generateFakeReplica = (params: Partial<StringifiedReplica> = {}): S
     replicaId: params.replicaId ?? `${faker.datatype.uuid()}`,
     replicaType: params.replicaType ?? faker.random.arrayElement(Object.values(ReplicaType)),
     geometryType: params.geometryType ?? faker.random.arrayElement(Object.values(GeometryType)),
-    layerId: params.layerId ?? faker.datatype.number(),
+    layerId: params.layerId ?? faker.datatype.number({ min: 1 }),
     bucketName: params.bucketName ?? `${faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT })}`,
     timestamp: params.timestamp ?? faker.datatype.datetime().toISOString(),
   };
@@ -77,7 +77,7 @@ export const generateFakeBaseFilter = (params: Partial<BaseReplicaFilter> = {}):
   return {
     replicaType: params.replicaType ?? faker.random.arrayElement(Object.values(ReplicaType)),
     geometryType: params.geometryType ?? faker.random.arrayElement(Object.values(GeometryType)),
-    layerId: params.layerId ?? faker.datatype.number(),
+    layerId: params.layerId ?? faker.datatype.number({ min: 1 }),
   };
 };
 
