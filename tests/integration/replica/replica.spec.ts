@@ -3,7 +3,7 @@ import config from 'config';
 import httpStatusCodes, { StatusCodes } from 'http-status-codes';
 import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
-import faker from 'faker';
+import { faker } from '@faker-js/faker';
 import { Application } from 'express';
 import { getApp } from '../../../src/app';
 import {

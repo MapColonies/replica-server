@@ -1,4 +1,4 @@
-import faker from 'faker';
+import { faker } from '@faker-js/faker';
 import { createUrlPaths } from '../../../src/common/utils';
 
 const URL_HEADER = 'https://some_address:443';
