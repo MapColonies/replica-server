@@ -1,4 +1,4 @@
-import faker from 'faker';
+import { faker } from '@faker-js/faker';
 import jsLogger from '@map-colonies/js-logger';
 import { ReplicaManager } from '../../../../src/replica/models/replicaManager';
 import {

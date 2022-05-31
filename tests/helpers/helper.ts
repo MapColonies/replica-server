@@ -1,4 +1,4 @@
-import faker from 'faker';
+import { faker } from '@faker-js/faker';
 import { BUCKET_NAME_MIN_LENGTH_LIMIT } from '../../src/common/constants';
 import { GeometryType, ReplicaType } from '../../src/common/enums';
 import { IObjectStorageConfig } from '../../src/common/interfaces';
@@ -13,7 +13,7 @@ type StringifiedReplicaResponse = Omit<ReplicaResponse, 'timestamp'> & { timesta
 const generateFakeLayer = (): Layer => {
   return {
     layerId: faker.datatype.number({ min: 1 }),
-    geometryTypes: faker.random.arrayElements(Object.values(GeometryType)),
+    geometryTypes: faker.helpers.arrayElements(Object.values(GeometryType)),
     layerName: faker.random.word(),
   };
 };
@@ -53,8 +53,8 @@ export const generateMockObjectStorageConfig = (includeProjectId = false): IObje
 export const generateFakeReplica = (params: Partial<StringifiedReplica> = {}): StringifiedReplica => {
   return {
     replicaId: params.replicaId ?? `${faker.datatype.uuid()}`,
-    replicaType: params.replicaType ?? faker.random.arrayElement(Object.values(ReplicaType)),
-    geometryType: params.geometryType ?? faker.random.arrayElement(Object.values(GeometryType)),
+    replicaType: params.replicaType ?? faker.helpers.arrayElement(Object.values(ReplicaType)),
+    geometryType: params.geometryType ?? faker.helpers.arrayElement(Object.values(GeometryType)),
     layerId: params.layerId ?? faker.datatype.number({ min: 1 }),
     bucketName: params.bucketName ?? `${faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT })}`,
     timestamp: params.timestamp ?? faker.datatype.datetime().toISOString(),
@@ -75,8 +75,8 @@ export const generateFakeReplicaWithFiles = (
 
 export const generateFakeBaseFilter = (params: Partial<BaseReplicaFilter> = {}): BaseReplicaFilter => {
   return {
-    replicaType: params.replicaType ?? faker.random.arrayElement(Object.values(ReplicaType)),
-    geometryType: params.geometryType ?? faker.random.arrayElement(Object.values(GeometryType)),
+    replicaType: params.replicaType ?? faker.helpers.arrayElement(Object.values(ReplicaType)),
+    geometryType: params.geometryType ?? faker.helpers.arrayElement(Object.values(GeometryType)),
     layerId: params.layerId ?? faker.datatype.number({ min: 1 }),
   };
 };
