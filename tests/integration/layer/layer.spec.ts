@@ -44,6 +44,8 @@ describe('layer', function () {
       await layerRepository.clear();
       const response = await requestSender.getLayers();
 
+      expect(response).toSatisfyApiSpec();
+
       expect(response.status).toBe(httpStatusCodes.OK);
       expect(response.body).toMatchObject([]);
     });
@@ -57,6 +59,8 @@ describe('layer', function () {
       });
 
       const response = await requestSender.getLayers();
+
+      expect(response).toSatisfyApiSpec();
 
       expect(response.status).toBe(httpStatusCodes.OK);
       expect(response.body).toEqual(expect.arrayContaining(insertedLayers));
@@ -77,6 +81,8 @@ describe('layer', function () {
       const [, mockApp] = await getApp(mockRegisterOptions);
       mockLayerRequestSender = new LayerRequestSender(mockApp);
       const response = await mockLayerRequestSender.getLayers();
+
+      expect(response).toSatisfyApiSpec();
 
       expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
       expect(response.body).toHaveProperty('message', 'failed');
