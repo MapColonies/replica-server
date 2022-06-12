@@ -2,7 +2,6 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/matchers.js'],
   coverageReporters: ['text', 'html'],
   collectCoverage: true,
   collectCoverageFrom: [
@@ -18,6 +17,7 @@ module.exports = {
   rootDir: '../../../.',
   testMatch: ['<rootDir>/tests/integration/**/*.spec.ts'],
   setupFiles: ['<rootDir>/tests/configurations/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/matchers.js', 'jest-openapi', '<rootDir>/tests/configurations/integration/initJestOpenApi.setup.ts'],
   reporters: [
     'default',
     [
