@@ -7,6 +7,7 @@ import { middleware as OpenApiMiddleware } from 'express-openapi-validator';
 import { inject, injectable } from 'tsyringe';
 import { Logger } from '@map-colonies/js-logger';
 import httpLogger from '@map-colonies/express-access-log-middleware';
+import { defaultMetricsMiddleware } from '@map-colonies/telemetry';
 import { Services } from './common/constants';
 import { IConfig } from './common/interfaces';
 import { REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
@@ -46,6 +47,7 @@ export class ServerBuilder {
   }
 
   private registerPreRoutesMiddleware(): void {
+    this.serverInstance.use('/metrics', defaultMetricsMiddleware());
     this.serverInstance.use(httpLogger({ logger: this.logger }));
 
     if (this.config.get<boolean>('server.response.compression.enabled')) {
