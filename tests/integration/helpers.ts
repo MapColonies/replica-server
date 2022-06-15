@@ -7,7 +7,7 @@ import { Services } from '../../src/common/constants';
 import { SortFilter } from '../../src/common/types';
 import { RegisterOptions } from '../../src/containerConfig';
 
-export const BEFORE_ALL_TIMEOUT = 10000;
+export const BEFORE_ALL_TIMEOUT = 20000;
 
 export const FLOW_TEST_TIMEOUT = 20000;
 
