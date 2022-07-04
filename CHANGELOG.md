@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.1](https://github.com/MapColonies/replica-server/compare/v1.0.0...v1.0.1) (2022-07-04)
+
+
+### Bug Fixes
+
+* **configurations:** helm tag definition helper add 'v' as header ([#5](https://github.com/MapColonies/replica-server/issues/5)) ([2344aa8](https://github.com/MapColonies/replica-server/commit/2344aa85705d34123adbbe88254c0203b6637a77))
+* **configurations:** helm tag definition helper adds v as header to default ([ff84a75](https://github.com/MapColonies/replica-server/commit/ff84a754ac90c0c08e2e15cc944d5286195aac00))
+* **deps:** generated new package-lock ([643c901](https://github.com/MapColonies/replica-server/commit/643c9011ce4061e38d751e11ad9edcf5eceff166))
+
 ## 1.0.0 (2021-10-10)
 
 

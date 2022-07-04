@@ -1,8 +1,10 @@
 openapi: 3.0.1
 info:
   title: replica-server
-  description: A RESTful API for querying and saving geographic replicas (snapshot and deltas)
-  version: 1.0.0
+  description: >-
+    A RESTful API for querying and saving geographic replicas (snapshot and
+    deltas)
+  version: 1.0.1
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -41,7 +43,9 @@ paths:
             default: desc
         - in: query
           name: geometry_type
-          description: return results with the following geometry type - point, linetrings or polygon
+          description: >-
+            return results with the following geometry type - point, linetrings
+            or polygon
           required: true
           schema:
             $ref: '#/components/schemas/geometryType'
@@ -164,7 +168,9 @@ paths:
       parameters:
         - in: query
           name: geometry_type
-          description: return results with the following geometry type - point, linestring or polygon
+          description: >-
+            return results with the following geometry type - point, linestring
+            or polygon
           required: true
           schema:
             $ref: '#/components/schemas/geometryType'
