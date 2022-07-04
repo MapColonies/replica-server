@@ -1,3 +1,5 @@
+
+
 name: "Publish release on tag push"
 
 on:
@@ -12,20 +14,33 @@ jobs:
       - name: Checkout code for CHANGELOG.md
         uses: actions/checkout@v2
 
+      - name: Get package info
+        id: package
+        uses: codex-team/action-nodejs-package-info@v1
+
+      - name: Generate postman collection for service
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Generate public openapi3.yaml
+        run: npx openapi-filter openapi3.yaml openapi3-public.yaml -- --flags x-internal --flagValues false
+
+      - name: Set File name
+        uses: myci-actions/export-env-var@1
+        with:
+          name: P_COLLECTION_FILE_NAME
+          value: ${{ steps.package.outputs.name }}-v${{ steps.package.outputs.version }}-postman-collection.json
+
+      - run: 'npx openapi-to-postmanv2 -s openapi3.yaml -o ${{ env.P_COLLECTION_FILE_NAME }}'
+
       - name: Publish Release to Github
         uses: softprops/action-gh-release@v1
         with:
           body_path: CHANGELOG.md
+          files: |
+            ${{ env.P_COLLECTION_FILE_NAME }}
+            openapi3.yaml
+            openapi3-public.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  push_image_to_ACR:
-    runs-on: ubuntu-latest
-
-    steps:
-        - name: Azure Pipelines Action
-          uses: Azure/pipelines@v1
-          with:
-            azure-devops-project-url: https://dev.azure.com/Libot-Mipui-Org/replica-server
-            azure-pipeline-name: 'build-and-push-to-ACR'
-            azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
