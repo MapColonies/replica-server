@@ -15,6 +15,7 @@ paths:
   /replica:
     get:
       operationId: getReplicas
+      x-internal: false
       tags:
         - public
       summary: Get replicas by required and optional filters
@@ -40,7 +41,7 @@ paths:
             default: desc
         - in: query
           name: geometry_type
-          description: return results with the following geometry type - point, linestring or polygon
+          description: return results with the following geometry type - point, linetrings or polygon
           required: true
           schema:
             $ref: '#/components/schemas/geometryType'
@@ -73,6 +74,7 @@ paths:
           $ref: '#/components/responses/UnexpectedError'
     post:
       operationId: postReplica
+      x-internal: true
       tags:
         - private
       summary: Create a new replica
@@ -105,6 +107,7 @@ paths:
           $ref: '#/components/responses/UnexpectedError'
     patch:
       operationId: patchReplicas
+      x-internal: true
       tags:
         - private
       summary: Update all replicas based on condition
@@ -128,6 +131,7 @@ paths:
           $ref: '#/components/responses/UnexpectedError'
     delete:
       operationId: deleteReplicas
+      x-internal: true
       tags:
         - private
       summary: Delete replicas by filters
@@ -153,6 +157,7 @@ paths:
   /replica/latest:
     get:
       operationId: getLatestReplica
+      x-internal: false
       tags:
         - public
       summary: Get the latest replica for a layer and geometry type
@@ -193,6 +198,7 @@ paths:
   /replica/{replicaId}:
     get:
       operationId: getReplicaById
+      x-internal: false
       tags:
         - public
       summary: Get a replica by id
@@ -220,6 +226,7 @@ paths:
           $ref: '#/components/responses/UnexpectedError'
     patch:
       operationId: patchReplicaById
+      x-internal: true
       tags:
         - private
       summary: update replica by id
@@ -250,6 +257,7 @@ paths:
           $ref: '#/components/responses/UnexpectedError'
     delete:
       operationId: deleteReplicaById
+      x-internal: true
       tags:
         - private
       summary: delete replica by id
@@ -280,6 +288,7 @@ paths:
   /replica/{replicaId}/file:
     post:
       operationId: postFile
+      x-internal: true
       tags:
         - private
       summary: Create a new File for a Replica
@@ -316,6 +325,7 @@ paths:
   /layers:
     get:
       operationId: getLayers
+      x-internal: false
       tags:
         - public
       summary: Get a list of available layers and their corresponding geometry types
