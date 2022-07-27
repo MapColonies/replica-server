@@ -204,7 +204,7 @@ paths:
   /replica/{replicaId}:
     get:
       operationId: getReplicaById
-      x-internal: false
+      x-internal: true
       tags:
         - public
       summary: Get a replica by id
