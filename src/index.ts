@@ -7,9 +7,8 @@ import { createTerminus, HealthCheck } from '@godaddy/terminus';
 import { Logger } from '@map-colonies/js-logger';
 import { DependencyContainer } from 'tsyringe';
 import config from 'config';
-import { DEFAULT_SERVER_PORT, Services } from './common/constants';
+import { DEFAULT_SERVER_PORT, HEALTHCHECK_SYMBOL, ON_SIGNAL, SERVICES } from './common/constants';
 import { getApp } from './app';
-import { ShutdownHandler } from './common/shutdownHandler';
 
 let depContainer: DependencyContainer | undefined;
 
@@ -19,10 +18,14 @@ void getApp()
   .then(([container, app]) => {
     depContainer = container;
 
-    const logger = depContainer.resolve<Logger>(Services.LOGGER);
-    const healthCheck = depContainer.resolve<HealthCheck>('healthcheck');
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    const server = createTerminus(createServer(app), { healthChecks: { '/liveness': healthCheck, onSignal: container.resolve('onSignal') } });
+    const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
+    const healthCheck = depContainer.resolve<HealthCheck | boolean>(HEALTHCHECK_SYMBOL);
+
+    const server = createTerminus(createServer(app), {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      healthChecks: { '/liveness': healthCheck, '/readiness': healthCheck },
+      onSignal: depContainer.resolve(ON_SIGNAL),
+    });
 
     server.listen(port, () => {
       logger.info(`app started on port ${port}`);
@@ -30,13 +33,13 @@ void getApp()
   })
   .catch(async (error: Error) => {
     const errorLogger =
-      depContainer?.isRegistered(Services.LOGGER) == true
-        ? depContainer.resolve<Logger>(Services.LOGGER).error.bind(depContainer.resolve<Logger>(Services.LOGGER))
+      depContainer?.isRegistered(SERVICES.LOGGER) == true
+        ? depContainer.resolve<Logger>(SERVICES.LOGGER).error.bind(depContainer.resolve<Logger>(SERVICES.LOGGER))
         : console.error;
     errorLogger({ msg: '😢 - failed initializing the server', err: error });
 
-    if (depContainer?.isRegistered(ShutdownHandler) == true) {
-      const shutdownHandler = depContainer.resolve(ShutdownHandler);
-      await shutdownHandler.onShutdown();
+    if (depContainer?.isRegistered(ON_SIGNAL) === true) {
+      const shutDown: () => Promise<void> = depContainer.resolve(ON_SIGNAL);
+      await shutDown();
     }
   });

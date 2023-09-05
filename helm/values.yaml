@@ -17,8 +17,13 @@ annotations: {}
 podAnnotations: {}
 
 cloudProvider:
-  flavor: openshift
   dockerRegistryUrl: my-registry-url.io
+  imagePullSecretName: 'my-registry-secret'
+  flavor: openshift
+
+caSecretName: ''
+caPath: '/usr/local/share/ca-certificates'
+caKey: 'ca.crt'
 
 image:
   repository: replica-server
@@ -26,7 +31,7 @@ image:
   # tag: "v1.0.0"
 
 resources:
-  enabled: false
+  enabled: true
   value:
     limits:
       cpu: 100m
@@ -73,6 +78,9 @@ dbConfig:
 route:
   enabled: true
   path: /
+  timeout:
+    enabled: false # defaults to 30s by openshift
+    duration: 60s # supported units (us, ms, s, m, h, d)
 
 ingress:
   enabled: false

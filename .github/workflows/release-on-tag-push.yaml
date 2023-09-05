@@ -1,5 +1,3 @@
-
-
 name: "Publish release on tag push"
 
 on:
@@ -21,10 +19,7 @@ jobs:
       - name: Generate postman collection for service
         uses: actions/setup-node@v2
         with:
-          node-version: '14'
-
-      - name: Generate public openapi3.yaml
-        run: npx openapi-filter openapi3.yaml openapi3-public.yaml -- --flags x-internal --flagValues false
+          node-version: '20'
 
       - name: Set File name
         uses: myci-actions/export-env-var@1
@@ -38,9 +33,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: CHANGELOG.md
-          files: |
-            ${{ env.P_COLLECTION_FILE_NAME }}
-            openapi3.yaml
-            openapi3-public.yaml
+          files: ${{ env.P_COLLECTION_FILE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
