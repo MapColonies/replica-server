@@ -1,6 +1,6 @@
 import { Logger } from '@map-colonies/js-logger';
 import { inject, injectable } from 'tsyringe';
-import { Services } from '../../common/constants';
+import { SERVICES } from '../../common/constants';
 import { IObjectStorageConfig } from '../../common/interfaces';
 import { createUrlPaths, isStringUndefinedOrEmpty } from '../../common/utils';
 import { FILE_CUSTOM_REPOSITORY_SYMBOL, FileRepository } from '../DAL/typeorm/fileRepository';
@@ -16,8 +16,8 @@ export class ReplicaManager {
   public constructor(
     @inject(REPLICA_CUSTOM_REPOSITORY_SYMBOL) private readonly replicaRepository: ReplicaRepository,
     @inject(FILE_CUSTOM_REPOSITORY_SYMBOL) private readonly fileRepository: FileRepository,
-    @inject(Services.LOGGER) private readonly logger: Logger,
-    @inject(Services.OBJECT_STORAGE) private readonly objectStorageConfig: IObjectStorageConfig
+    @inject(SERVICES.LOGGER) private readonly logger: Logger,
+    @inject(SERVICES.OBJECT_STORAGE) private readonly objectStorageConfig: IObjectStorageConfig
   ) {
     const { protocol, host, port } = this.objectStorageConfig;
     this.urlHeader = `${protocol}://${host}:${port}`;

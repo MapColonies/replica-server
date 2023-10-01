@@ -40,4 +40,5 @@ data:
   OBJECT_STORAGE_PROJECT_ID: {{ .projectId.value }}
   {{- end }}
   {{- end }}
+  npm_config_cache: /tmp/
 {{- end }}

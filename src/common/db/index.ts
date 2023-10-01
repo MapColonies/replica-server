@@ -8,7 +8,7 @@ import { File } from '../../replica/DAL/typeorm/file';
 import { Replica } from '../../replica/DAL/typeorm/replica';
 import { DbConfig, IConfig } from '../interfaces';
 import { promiseTimeout } from '../utils/promiseTimeout';
-import { Services } from '../constants';
+import { SERVICES } from '../constants';
 
 let connectionSingleton: DataSource | undefined;
 
@@ -47,7 +47,7 @@ export const getDbHealthCheckFunction = (connection: DataSource): HealthCheck =>
 };
 
 export const dataSourceFactory: FactoryFunction<DataSource> = (container: DependencyContainer): DataSource => {
-  const config = container.resolve<IConfig>(Services.CONFIG);
+  const config = container.resolve<IConfig>(SERVICES.CONFIG);
   const dbConfig = config.get<DbConfig>('db');
   const dataSourceOptions = createConnectionOptions(dbConfig);
   return new DataSource(dataSourceOptions);
