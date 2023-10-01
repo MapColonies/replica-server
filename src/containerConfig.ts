@@ -5,10 +5,10 @@ import { trace, metrics as OtelMetrics } from '@opentelemetry/api';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
 import { instanceCachingFactory, instancePerContainerCachingFactory } from 'tsyringe';
 import jsLogger, { LoggerOptions } from '@map-colonies/js-logger';
+import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { HEALTHCHECK_SYMBOL, ON_SIGNAL, SERVICES, SERVICE_NAME } from './common/constants';
 import { DATA_SOURCE_PROVIDER } from './common/db';
 import { tracing } from './common/tracing';
-import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { replicaRouterFactory, REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
 import { InjectionObject, registerDependencies } from './common/dependencyRegistration';
 import { layerRouterFactory, LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
@@ -17,7 +17,6 @@ import { IObjectStorageConfig } from './common/interfaces';
 import { dataSourceFactory, getDbHealthCheckFunction } from './common/db';
 import { fileRepositoryFactory, FILE_CUSTOM_REPOSITORY_SYMBOL } from './replica/DAL/typeorm/fileRepository';
 import { layerRepoFactory, LAYER_REPOSITORY_SYMBOL } from './layer/DAL/typeorm/layerRepository';
-import { HealthCheck } from '@godaddy/terminus';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
