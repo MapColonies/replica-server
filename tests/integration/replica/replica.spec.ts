@@ -882,9 +882,9 @@ describe('replica', function () {
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
           `request/query/filter/geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request/query/filter/layer_id should be number`],
+        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request/query/filter/layer_id must be number`],
         [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request/query/filter/exclusive_from must match format "date-time"`],
-        [generateFakePrivateFilter({ to: faker.random.word() }), `request/query/filter/to should match format "date-time"`],
+        [generateFakePrivateFilter({ to: faker.random.word() }), `request/query/filter/to must match format "date-time"`],
         [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request/query/filter/is_hidden must be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
@@ -954,9 +954,9 @@ describe('replica', function () {
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
           `request/query/filter/geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request/query/filter/layer_id should be number`],
+        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request/query/filter/layer_id must be number`],
         [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request/query/filter/exclusive_from must match format "date-time"`],
-        [generateFakePrivateFilter({ to: faker.random.word() }), `request/query/filter/to should match format "date-time"`],
+        [generateFakePrivateFilter({ to: faker.random.word() }), `request/query/filter/to must match format "date-time"`],
         [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request/query/filter/is_hidden must be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
