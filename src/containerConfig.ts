@@ -2,7 +2,7 @@ import config from 'config';
 import { getOtelMixin, Metrics } from '@map-colonies/telemetry';
 import { DataSource } from 'typeorm';
 import { trace } from '@opentelemetry/api';
-import { metrics } from '@opentelemetry/api-metrics';
+import { Registry } from 'prom-client';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
 import { instancePerContainerCachingFactory } from 'tsyringe';
 import jsLogger, { LoggerOptions } from '@map-colonies/js-logger';
@@ -36,6 +36,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     const objectStorageConfig = config.get<IObjectStorageConfig>('objectStorage');
 
     const tracer = trace.getTracer(SERVICE_NAME);
+    const metricsRegistry = new Registry();
 
     const dependencies: InjectionObject<unknown>[] = [
       { token: SERVICES.CONFIG, provider: { useValue: config } },
@@ -50,7 +51,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       },
       { token: SERVICES.LOGGER, provider: { useValue: logger } },
       { token: SERVICES.TRACER, provider: { useValue: tracer } },
-      { token: SERVICES.METRICS, provider: { useValue: metrics.getMeter('app') } },
+      { token: SERVICES.METRICS, provider: { useValue: metricsRegistry } },
       { token: SERVICES.OBJECT_STORAGE, provider: { useValue: objectStorageConfig } },
       { token: REPLICA_CUSTOM_REPOSITORY_SYMBOL, provider: { useFactory: replicaRepositoryFactory } },
       { token: FILE_CUSTOM_REPOSITORY_SYMBOL, provider: { useFactory: fileRepositoryFactory } },
