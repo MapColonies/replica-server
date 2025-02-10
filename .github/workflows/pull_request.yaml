@@ -94,7 +94,7 @@ jobs:
         shell: bash
 
       - name: Create schema
-        run: psql -h postgres -d postgres -U postgres -c 'CREATE SCHEMA replica_server;'
+        run: psql -h localhost -d postgres -U postgres -c 'CREATE SCHEMA replica_server;'
         env:
           PGPASSWORD: 1234
 
