@@ -9,7 +9,7 @@ export class LayerManager {
   public constructor(
     @inject(LAYER_REPOSITORY_SYMBOL) private readonly layerRepository: LayerRepository,
     @inject(SERVICES.LOGGER) private readonly logger: Logger
-  ) { }
+  ) {}
   public async getAllLayers(): Promise<Layer[]> {
     this.logger.info('getting all layers');
 

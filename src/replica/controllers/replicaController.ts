@@ -27,7 +27,10 @@ type DeleteReplicasHandler = RequestHandler<undefined, ReplicaResponse[], undefi
 
 @injectable()
 export class ReplicaController {
-  public constructor(@inject(SERVICES.LOGGER) private readonly logger: Logger, @inject(ReplicaManager) private readonly manager: ReplicaManager) { }
+  public constructor(
+    @inject(SERVICES.LOGGER) private readonly logger: Logger,
+    @inject(ReplicaManager) private readonly manager: ReplicaManager
+  ) {}
 
   public getReplicaById: GetReplicaByIdHandler = async (req, res, next) => {
     try {

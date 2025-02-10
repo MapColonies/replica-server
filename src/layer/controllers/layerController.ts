@@ -11,7 +11,10 @@ type GetAllLayersHandler = RequestHandler<undefined, Layer[]>;
 
 @injectable()
 export class LayerController {
-  public constructor(@inject(SERVICES.LOGGER) private readonly logger: Logger, @inject(LayerManager) private readonly manager: LayerManager) { }
+  public constructor(
+    @inject(SERVICES.LOGGER) private readonly logger: Logger,
+    @inject(LayerManager) private readonly manager: LayerManager
+  ) {}
 
   public getLayers: GetAllLayersHandler = async (req, res, next) => {
     try {
