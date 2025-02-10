@@ -6,9 +6,8 @@ import { metrics } from '@opentelemetry/api-metrics';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
 import { instancePerContainerCachingFactory } from 'tsyringe';
 import jsLogger, { LoggerOptions } from '@map-colonies/js-logger';
-import { SERVICES } from './common/constants';
+import { SERVICES, SERVICE_NAME } from './common/constants';
 import { DATA_SOURCE_PROVIDER } from './common/db';
-import { tracing } from './common/tracing';
 import { replicaRouterFactory, REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
 import { InjectionObject, registerDependencies } from './common/dependencyRegistration';
 import { layerRouterFactory, LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
@@ -18,6 +17,7 @@ import { dataSourceFactory, getDbHealthCheckFunction } from './common/db';
 import { fileRepositoryFactory, FILE_CUSTOM_REPOSITORY_SYMBOL } from './replica/DAL/typeorm/fileRepository';
 import { layerRepoFactory, LAYER_REPOSITORY_SYMBOL } from './layer/DAL/typeorm/layerRepository';
 import { ShutdownHandler } from './common/shutdownHandler';
+import { getTracing } from './common/tracing';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
@@ -35,7 +35,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
 
     const objectStorageConfig = config.get<IObjectStorageConfig>('objectStorage');
 
-    const tracer = trace.getTracer('app');
+    const tracer = trace.getTracer(SERVICE_NAME);
 
     const dependencies: InjectionObject<unknown>[] = [
       { token: SERVICES.CONFIG, provider: { useValue: config } },
@@ -66,7 +66,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
         provider: {
           useValue: {
             useValue: async (): Promise<void> => {
-              await Promise.all([tracing.stop(), otelMetrics.stop()]);
+              await Promise.all([getTracing().stop(), otelMetrics.stop()]);
             },
           },
         },
