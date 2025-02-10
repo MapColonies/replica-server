@@ -589,7 +589,7 @@ describe('replica', function () {
         const response = await requestSender.getReplicaById('invalidId');
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', 'request.params.replicaId should match format "uuid"');
+        expect(response.body).toHaveProperty('message', 'request.params.replicaId must match format "uuid"');
       });
 
       it('should return 404 if the replica with the given replicaId was not found', async function () {
@@ -616,11 +616,11 @@ describe('replica', function () {
       it.each([
         [
           generateFakeBaseFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request.query.replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeBaseFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.query.geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakeBaseFilter({ layerId: faker.random.word() as unknown as number }), `request.query.layer_id should be number`],
       ])(
@@ -695,16 +695,16 @@ describe('replica', function () {
       it.each([
         [
           generateFakePublicFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request.query.replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakePublicFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.query.geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakePublicFilter({ layerId: faker.random.word() as unknown as number }), `request.query.layer_id should be number`],
         [generateFakePublicFilter({ exclusiveFrom: faker.random.word() }), `request.query.exclusive_from should match format "date-time"`],
         [generateFakePublicFilter({ to: faker.random.word() }), `request.query.to should match format "date-time"`],
-        [generateFakePublicFilter({ sort: 'bad' as SortFilter }), `request.query.sort should be equal to one of the allowed values: asc, desc`],
+        [generateFakePublicFilter({ sort: 'bad' as SortFilter }), `request.query.sort must be equal to one of the allowed values: asc, desc`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -788,11 +788,11 @@ describe('replica', function () {
         [generateFakeReplica({ replicaId: faker.random.word() }), `request.body.replicaId should match format "uuid"`],
         [
           generateFakeReplica({ replicaType: faker.random.word() as ReplicaType }),
-          `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
+          `request.body.replicaType must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeReplica({ geometryType: faker.random.word() as GeometryType }),
-          `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.body.geometryType must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakeReplica({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
         [generateFakeReplica({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
@@ -835,11 +835,11 @@ describe('replica', function () {
       it.each([
         [
           generateFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
-          `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
+          `request.body.replicaType must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
-          `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.body.geometryType must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request.body.isHidden should be boolean`],
         [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
@@ -876,11 +876,11 @@ describe('replica', function () {
       it.each([
         [
           generateFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.filter.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request.query.filter.replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.query.filter.geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request.query.filter.layer_id should be number`],
         [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
@@ -899,11 +899,11 @@ describe('replica', function () {
       it.each([
         [
           generateFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
-          `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
+          `request.body.replicaType must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
-          `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.body.geometryType must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request.body.isHidden should be boolean`],
         [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
@@ -948,11 +948,11 @@ describe('replica', function () {
       it.each([
         [
           generateFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.filter.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request.query.filter.replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request.query.filter.geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
         [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request.query.filter.layer_id should be number`],
         [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
