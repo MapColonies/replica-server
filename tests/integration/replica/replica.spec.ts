@@ -15,7 +15,7 @@ import {
   sortByOrderFilter,
   TOP_TO,
 } from '../helpers';
-import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, Services } from '../../../src/common/constants';
+import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, SERVICES } from '../../../src/common/constants';
 import { DATA_SOURCE_PROVIDER } from '../../../src/common/db';
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
 import { DbConfig } from '../../../src/common/interfaces';
@@ -55,7 +55,7 @@ describe('replica', function () {
     const registerOptions = getBaseRegisterOptions();
     registerOptions.override.push(
       { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } },
-      { token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } }
+      { token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } }
     );
 
     [container, app] = await getApp(registerOptions);
@@ -109,7 +109,7 @@ describe('replica', function () {
           expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
 
           const mockRegisterOptions = getBaseRegisterOptions();
-          mockRegisterOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
+          mockRegisterOptions.override.push({ token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
           const [, mockApp] = await getApp(mockRegisterOptions);
           mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
           const response = await mockReplicaRequestSender.getReplicaById(replicaId);

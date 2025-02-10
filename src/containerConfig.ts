@@ -6,7 +6,7 @@ import { metrics } from '@opentelemetry/api-metrics';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
 import { instancePerContainerCachingFactory } from 'tsyringe';
 import jsLogger, { LoggerOptions } from '@map-colonies/js-logger';
-import { Services } from './common/constants';
+import { SERVICES } from './common/constants';
 import { DATA_SOURCE_PROVIDER } from './common/db';
 import { tracing } from './common/tracing';
 import { replicaRouterFactory, REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
@@ -38,7 +38,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     const tracer = trace.getTracer('app');
 
     const dependencies: InjectionObject<unknown>[] = [
-      { token: Services.CONFIG, provider: { useValue: config } },
+      { token: SERVICES.CONFIG, provider: { useValue: config } },
       {
         token: DATA_SOURCE_PROVIDER,
         provider: { useFactory: instancePerContainerCachingFactory(dataSourceFactory) },
@@ -48,10 +48,10 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
           await dataSource.initialize();
         },
       },
-      { token: Services.LOGGER, provider: { useValue: logger } },
-      { token: Services.TRACER, provider: { useValue: tracer } },
-      { token: Services.METER, provider: { useValue: metrics.getMeter('app') } },
-      { token: Services.OBJECT_STORAGE, provider: { useValue: objectStorageConfig } },
+      { token: SERVICES.LOGGER, provider: { useValue: logger } },
+      { token: SERVICES.TRACER, provider: { useValue: tracer } },
+      { token: SERVICES.METRICS, provider: { useValue: metrics.getMeter('app') } },
+      { token: SERVICES.OBJECT_STORAGE, provider: { useValue: objectStorageConfig } },
       { token: REPLICA_CUSTOM_REPOSITORY_SYMBOL, provider: { useFactory: replicaRepositoryFactory } },
       { token: FILE_CUSTOM_REPOSITORY_SYMBOL, provider: { useFactory: fileRepositoryFactory } },
       { token: LAYER_REPOSITORY_SYMBOL, provider: { useFactory: layerRepoFactory } },

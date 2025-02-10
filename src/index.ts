@@ -7,7 +7,7 @@ import { createTerminus, HealthCheck } from '@godaddy/terminus';
 import { Logger } from '@map-colonies/js-logger';
 import { DependencyContainer } from 'tsyringe';
 import config from 'config';
-import { DEFAULT_SERVER_PORT, Services } from './common/constants';
+import { DEFAULT_SERVER_PORT, SERVICES } from './common/constants';
 import { getApp } from './app';
 import { ShutdownHandler } from './common/shutdownHandler';
 
@@ -19,7 +19,7 @@ void getApp()
   .then(([container, app]) => {
     depContainer = container;
 
-    const logger = depContainer.resolve<Logger>(Services.LOGGER);
+    const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
     const healthCheck = depContainer.resolve<HealthCheck>('healthcheck');
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const server = createTerminus(createServer(app), { healthChecks: { '/liveness': healthCheck, onSignal: container.resolve('onSignal') } });
@@ -30,8 +30,8 @@ void getApp()
   })
   .catch(async (error: Error) => {
     const errorLogger =
-      depContainer?.isRegistered(Services.LOGGER) == true
-        ? depContainer.resolve<Logger>(Services.LOGGER).error.bind(depContainer.resolve<Logger>(Services.LOGGER))
+      depContainer?.isRegistered(SERVICES.LOGGER) == true
+        ? depContainer.resolve<Logger>(SERVICES.LOGGER).error.bind(depContainer.resolve<Logger>(SERVICES.LOGGER))
         : console.error;
     errorLogger({ msg: '😢 - failed initializing the server', err: error });
 
