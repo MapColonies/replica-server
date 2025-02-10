@@ -1,4 +1,5 @@
 import * as supertest from 'supertest';
+import { Application } from 'express';
 import { BaseReplicaFilter } from '../../../../src/replica/models/replicaFilter';
 import { convertObjectToSnakeCase } from '../../helpers';
 import {
@@ -9,7 +10,7 @@ import {
 } from '../../../helpers/helper';
 
 export class ReplicaRequestSender {
-  public constructor(private readonly app: Express.Application) {}
+  public constructor(private readonly app: Application) {}
 
   public async getReplicaById(replicaId: string): Promise<supertest.Response> {
     return supertest.agent(this.app).get(`/replica/${replicaId}`);
