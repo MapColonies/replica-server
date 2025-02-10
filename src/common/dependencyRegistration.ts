@@ -10,18 +10,20 @@ export interface InjectionObject<T> {
   postInjectionHook?: (container: DependencyContainer) => Promise<void>;
 }
 
-export const registerDependencies = async (
+export const registerDependencies = (
   dependencies: InjectionObject<unknown>[],
   override?: InjectionObject<unknown>[],
   useChild = false
-): Promise<DependencyContainer> => {
+): DependencyContainer => {
   const container = useChild ? defaultContainer.createChildContainer() : defaultContainer;
-
-  for (const dep of dependencies) {
-    const injectionObj = override?.find((overrideObj) => overrideObj.token === dep.token) ?? dep;
-    container.register(injectionObj.token, injectionObj.provider as constructor<unknown>, injectionObj.options);
-    await injectionObj.postInjectionHook?.(container);
-  }
-
+  dependencies.forEach((injectionObj) => {
+    const inject = override?.find((overrideObj) => overrideObj.token === injectionObj.token) === undefined;
+    if (inject) {
+      container.register(injectionObj.token, injectionObj.provider as constructor<unknown>);
+    }
+  });
+  override?.forEach((injectionObj) => {
+    container.register(injectionObj.token, injectionObj.provider as constructor<unknown>);
+  });
   return container;
 };
