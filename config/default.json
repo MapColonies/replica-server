@@ -6,6 +6,11 @@
     "uiPath": "/api"
   },
   "telemetry": {
+    "metrics": {},
+    "tracing": {
+      "isEnabled": false
+    },
+    "shared": {},
     "logger": {
       "level": "info",
       "prettyPrint": false

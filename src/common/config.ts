@@ -6,6 +6,7 @@ type ConfigType = ConfigInstance<vectorReplicaServerV1Type>;
 
 let configInstance: ConfigType | undefined;
 
+
 /**
  * Initializes the configuration by fetching it from the server.
  * This should only be called from the instrumentation file.
