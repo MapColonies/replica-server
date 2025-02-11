@@ -27,7 +27,6 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
   const shutdownHandler = new ShutdownHandler();
   try {
     const configInstance = getConfig();
-    configInstance.getAll().telemetry
 
     const loggerConfig = configInstance.get('telemetry.logger');
     const logger = jsLogger({ ...loggerConfig, mixin: getOtelMixin() });
