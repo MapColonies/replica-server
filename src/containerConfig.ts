@@ -1,10 +1,10 @@
-//import config from 'config';
 import { getOtelMixin, Metrics } from '@map-colonies/telemetry';
 import { DataSource } from 'typeorm';
 import { trace } from '@opentelemetry/api';
 import { Registry } from 'prom-client';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
 import { instancePerContainerCachingFactory } from 'tsyringe';
+import jsLogger from '@map-colonies/js-logger';
 import { SERVICES, SERVICE_NAME } from './common/constants';
 import { DATA_SOURCE_PROVIDER } from './common/db';
 import { replicaRouterFactory, REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';

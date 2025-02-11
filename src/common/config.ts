@@ -12,13 +12,10 @@ let configInstance: ConfigType | undefined;
  * @returns A Promise that resolves when the configuration is successfully initialized.
  */
 async function initConfig(offlineMode?: boolean): Promise<void> {
-  const configInstance = await config({
+  configInstance = await config({
     schema: vectorReplicaServerV1,
     offlineMode,
   });
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const b = a.get('openapiConfig')
 }
 
 function getConfig(): ConfigType {
