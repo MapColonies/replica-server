@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import config from 'config';
 import httpStatusCodes, { StatusCodes } from 'http-status-codes';
 import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { Application } from 'express';
-import { initConfig } from '@src/common/config';
+import { getConfig, initConfig } from '../../../src/common/config';
 import { getApp } from '../../../src/app';
 import {
   BEFORE_ALL_TIMEOUT,
@@ -48,11 +46,12 @@ describe('replica', function () {
   let mockReplicaRequestSender: ReplicaRequestSender;
 
   beforeAll(async function () {
-    const dataSourceOptions = config.get<DbConfig>('db');
-    connection = await initConnection(dataSourceOptions);
+    await initConfig(true);
+    const config = getConfig();
+    const dataSourceOptions = config.get('db');
+    connection = await initConnection(dataSourceOptions as DbConfig);
     const replicaRepository = connection.getRepository(Replica);
     await replicaRepository.delete({});
-    await initConfig(true);
 
     const registerOptions = getBaseRegisterOptions();
     registerOptions.override.push(
