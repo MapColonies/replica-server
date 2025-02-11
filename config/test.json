@@ -1,4 +1,30 @@
 {
+  "openapiConfig": {
+    "filePath": "./openapi3.yaml",
+    "basePath": "/docs",
+    "rawPath": "/api",
+    "uiPath": "/api"
+  },
+  "telemetry": {
+    "logger": {
+      "level": "info",
+      "prettyPrint": false
+    }
+  },
+  "server": {
+    "port": "8080",
+    "request": {
+      "payload": {
+        "limit": "1mb"
+      }
+    },
+    "response": {
+      "compression": {
+        "enabled": true,
+        "options": null
+      }
+    }
+  },
   "db": {
     "host": "postgres",
     "schema": "replica_server",
@@ -6,5 +32,10 @@
     "password": "1234",
     "database": "postgres",
     "enableSslAuth": false
+  },
+  "objectStorage": {
+    "protocol": "http",
+    "host": "some_object_storage_host",
+    "port": 9000
   }
 }
