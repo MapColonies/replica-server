@@ -5,6 +5,7 @@ import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { Application } from 'express';
+import { initConfig } from '@src/common/config';
 import { getApp } from '../../../src/app';
 import {
   BEFORE_ALL_TIMEOUT,
@@ -51,6 +52,7 @@ describe('replica', function () {
     connection = await initConnection(dataSourceOptions);
     const replicaRepository = connection.getRepository(Replica);
     await replicaRepository.delete({});
+    await initConfig(true);
 
     const registerOptions = getBaseRegisterOptions();
     registerOptions.override.push(
