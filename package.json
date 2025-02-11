@@ -50,6 +50,7 @@
     "@map-colonies/js-logger": "^1.0.1",
     "@map-colonies/openapi-express-viewer": "^3.0.0",
     "@map-colonies/telemetry": "^7.0.1",
+    "@map-colonies/schemas": "https://ghatmpstorage.blob.core.windows.net/npm-packages/schemas-2a1a5cb74c29283061b7bdbd379b917f744e6a50.tgz",
     "@opentelemetry/api": "^1.7.0",
     "@opentelemetry/api-metrics": "0.29.0",
     "camelcase": "^6.3.0",

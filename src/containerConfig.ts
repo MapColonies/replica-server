@@ -1,23 +1,22 @@
-import config from 'config';
+//import config from 'config';
 import { getOtelMixin, Metrics } from '@map-colonies/telemetry';
 import { DataSource } from 'typeorm';
 import { trace } from '@opentelemetry/api';
 import { Registry } from 'prom-client';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
 import { instancePerContainerCachingFactory } from 'tsyringe';
-import jsLogger, { LoggerOptions } from '@map-colonies/js-logger';
 import { SERVICES, SERVICE_NAME } from './common/constants';
 import { DATA_SOURCE_PROVIDER } from './common/db';
 import { replicaRouterFactory, REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
 import { InjectionObject, registerDependencies } from './common/dependencyRegistration';
 import { layerRouterFactory, LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
 import { REPLICA_CUSTOM_REPOSITORY_SYMBOL, replicaRepositoryFactory } from './replica/DAL/typeorm/replicaRepository';
-import { IObjectStorageConfig } from './common/interfaces';
 import { dataSourceFactory, getDbHealthCheckFunction } from './common/db';
 import { fileRepositoryFactory, FILE_CUSTOM_REPOSITORY_SYMBOL } from './replica/DAL/typeorm/fileRepository';
 import { layerRepoFactory, LAYER_REPOSITORY_SYMBOL } from './layer/DAL/typeorm/layerRepository';
 import { ShutdownHandler } from './common/shutdownHandler';
 import { getTracing } from './common/tracing';
+import { getConfig } from './common/config';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
@@ -27,19 +26,21 @@ export interface RegisterOptions {
 export const registerExternalValues = async (options?: RegisterOptions): Promise<DependencyContainer> => {
   const shutdownHandler = new ShutdownHandler();
   try {
-    const loggerConfig = config.get<LoggerOptions>('telemetry.logger');
+    const configInstance = getConfig();
+
+    const loggerConfig = configInstance.get('telemetry.logger');
     const logger = jsLogger({ ...loggerConfig, mixin: getOtelMixin() });
 
     const otelMetrics = new Metrics();
     otelMetrics.start();
 
-    const objectStorageConfig = config.get<IObjectStorageConfig>('objectStorage');
+    const objectStorageConfig = configInstance.get('objectStorage');
 
     const tracer = trace.getTracer(SERVICE_NAME);
     const metricsRegistry = new Registry();
 
     const dependencies: InjectionObject<unknown>[] = [
-      { token: SERVICES.CONFIG, provider: { useValue: config } },
+      { token: SERVICES.CONFIG, provider: { useValue: configInstance } },
       {
         token: DATA_SOURCE_PROVIDER,
         provider: { useFactory: instancePerContainerCachingFactory(dataSourceFactory) },

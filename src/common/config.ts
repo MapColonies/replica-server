@@ -1,8 +1,8 @@
 import { type ConfigInstance, config } from '@map-colonies/config';
-import { commonBoilerplateV2, type commonBoilerplateV2Type } from '@map-colonies/schemas';
+import { vectorReplicaServerV1, type vectorReplicaServerV1Type } from '@map-colonies/schemas';
 
 // Choose here the type of the config instance and import this type from the entire application
-type ConfigType = ConfigInstance<commonBoilerplateV2Type>;
+type ConfigType = ConfigInstance<vectorReplicaServerV1Type>;
 
 let configInstance: ConfigType | undefined;
 
@@ -12,10 +12,13 @@ let configInstance: ConfigType | undefined;
  * @returns A Promise that resolves when the configuration is successfully initialized.
  */
 async function initConfig(offlineMode?: boolean): Promise<void> {
-  configInstance = await config({
-    schema: commonBoilerplateV2,
+  const configInstance = await config({
+    schema: vectorReplicaServerV1,
     offlineMode,
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const b = a.get('openapiConfig')
 }
 
 function getConfig(): ConfigType {
