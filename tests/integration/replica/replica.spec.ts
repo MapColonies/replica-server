@@ -3,7 +3,7 @@ import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { Application } from 'express';
-import { convertDBConfigToTypeorm } from '@src/common/utils/configModifier';
+import { convertDBConfigToTypeorm } from '../../../src/common/utils/configModifier';
 import { getConfig, initConfig } from '../../../src/common/config';
 import { getApp } from '../../../src/app';
 import {
