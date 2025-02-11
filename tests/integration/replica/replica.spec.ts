@@ -3,6 +3,7 @@ import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { Application } from 'express';
+import { convertDBConfigToTypeorm } from '@src/common/utils/configModifier';
 import { getConfig, initConfig } from '../../../src/common/config';
 import { getApp } from '../../../src/app';
 import {
@@ -49,7 +50,7 @@ describe('replica', function () {
     await initConfig(true);
     const config = getConfig();
     const dataSourceOptions = config.get('db');
-    connection = await initConnection(dataSourceOptions as DbConfig);
+    connection = await initConnection(convertDBConfigToTypeorm(dataSourceOptions));
     const replicaRepository = connection.getRepository(Replica);
     await replicaRepository.delete({});
 

@@ -1,3 +1,4 @@
+import { vectorReplicaServerV1Type } from '@map-colonies/schemas';
 import { DataSourceOptions } from 'typeorm';
 
 export interface IConfig {
@@ -9,6 +10,8 @@ export type DbConfig = {
   enableSslAuth: boolean;
   sslPaths: { ca: string; cert: string; key: string };
 } & DataSourceOptions;
+
+export type DbCommonConfig = Pick<vectorReplicaServerV1Type, "db">["db"];
 
 export interface OpenApiConfig {
   filePath: string;
