@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { getConfig } from '@src/common/config';
-import { convertDBConfigToTypeorm } from '@src/common/utils/configModifier';
+import { getConfig } from './src/common/config';
+import { convertDBConfigToTypeorm } from './src/common/utils/configModifier';
 import { createConnectionOptions } from './src/common/db';
 
 const config = getConfig();
