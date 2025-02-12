@@ -31,12 +31,20 @@
     }
   },
   "db": {
-    "host": "postgres",
-    "schema": "replica_server",
+    "type": "postgres",
+    "host": "localhost",
+    "port": 5432,
     "username": "postgres",
-    "password": "1234",
+    "password": "postgres",
+    "enableSslAuth": false,
+    "ssl": {
+      "ca": "",
+      "key": "",
+      "cert": "",
+      "enabled": false
+    },
     "database": "postgres",
-    "enableSslAuth": false
+    "schema": "replica_server"
   },
   "objectStorage": {
     "protocol": "http",

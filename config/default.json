@@ -37,10 +37,11 @@
     "username": "postgres",
     "password": "postgres",
     "enableSslAuth": false,
-    "sslPaths": {
+    "ssl": {
       "ca": "",
       "key": "",
-      "cert": ""
+      "cert": "",
+      "enabled": false
     },
     "database": "postgres",
     "schema": "replica_server"

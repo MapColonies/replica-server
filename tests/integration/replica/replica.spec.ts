@@ -18,7 +18,6 @@ import {
 import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, SERVICES } from '../../../src/common/constants';
 import { DATA_SOURCE_PROVIDER } from '../../../src/common/db';
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
-import { DbConfig } from '../../../src/common/interfaces';
 import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
 import { Replica } from '../../../src/replica/DAL/typeorm/replica';
