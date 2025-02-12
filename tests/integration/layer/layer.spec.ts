@@ -1,13 +1,13 @@
-import config from 'config';
 import httpStatusCodes from 'http-status-codes';
 import { QueryFailedError, Repository, DataSource } from 'typeorm';
 import { Application } from 'express';
 import { DependencyContainer } from 'tsyringe';
+import { getConfig } from '@src/common/config';
+import { convertDBConfigToTypeorm } from '@src/common/utils/configModifier';
 import { getApp } from '../../../src/app';
 import { Layer as LayerEntity } from '../../../src/layer/DAL/typeorm/layer';
 import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/typeorm/layerRepository';
 import { Layer } from '../../../src/layer/models/layer';
-import { DbConfig } from '../../../src/common/interfaces';
 import { BEFORE_ALL_TIMEOUT, getBaseRegisterOptions } from '../helpers';
 import { DATA_SOURCE_PROVIDER, initConnection } from '../../../src/common/db';
 import { generateFakeLayers } from '../../helpers/helper';
@@ -22,8 +22,10 @@ describe('layer', function () {
   let layerRepository: Repository<LayerEntity>;
 
   beforeAll(async function () {
-    const dataSourceOptions = config.get<DbConfig>('db');
-    connection = await initConnection(dataSourceOptions);
+    const config = getConfig();
+    const dataSourceOptions = config.get('db');
+    const dbConfiguration = convertDBConfigToTypeorm(dataSourceOptions);
+    connection = await initConnection(dbConfiguration);
     layerRepository = connection.getRepository(LayerEntity);
     await layerRepository.clear();
 
