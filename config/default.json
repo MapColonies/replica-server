@@ -41,7 +41,7 @@
       "ca": "",
       "key": "",
       "cert": "",
-      "enabled": true
+      "enabled": false
     },
     "database": "postgres",
     "schema": "replica_server"

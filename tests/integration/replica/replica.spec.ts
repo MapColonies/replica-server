@@ -49,7 +49,8 @@ describe('replica', function () {
     await initConfig(true);
     const config = getConfig();
     const dataSourceOptions = config.get('db');
-    connection = await initConnection(convertDBConfigToTypeorm(dataSourceOptions));
+    const dbConfiguration = convertDBConfigToTypeorm(dataSourceOptions);
+    connection = await initConnection(dbConfiguration);
     const replicaRepository = connection.getRepository(Replica);
     await replicaRepository.delete({});
 
