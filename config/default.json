@@ -17,7 +17,7 @@
     }
   },
   "server": {
-    "port": "8080",
+    "port": 8080,
     "request": {
       "payload": {
         "limit": "1mb"
@@ -31,16 +31,11 @@
     }
   },
   "db": {
-    "type": "postgres",
     "host": "localhost",
     "port": 5432,
     "username": "postgres",
     "password": "postgres",
-    "enableSslAuth": false,
     "ssl": {
-      "ca": "",
-      "key": "",
-      "cert": "",
       "enabled": false
     },
     "database": "postgres",
