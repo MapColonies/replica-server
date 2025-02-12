@@ -1,12 +1,13 @@
 import { DataSource } from 'typeorm';
-import config from 'config';
-import { DbConfig } from './src/common/interfaces';
+import { getConfig } from '@src/common/config';
+import { convertDBConfigToTypeorm } from '@src/common/utils/configModifier';
 import { createConnectionOptions } from './src/common/db';
 
-const dataSourceOptions = config.get<DbConfig>('db');
+const config = getConfig();
+const dataSourceOptions = config.get('db');
 
 export const appDataSource = new DataSource({
-  ...createConnectionOptions(dataSourceOptions),
+  ...createConnectionOptions(convertDBConfigToTypeorm(dataSourceOptions)),
   entities: ['src/**/DAL/typeorm/*.ts'],
   migrationsTableName: 'migrations_table',
   migrations: ['db/migrations/*.ts'],
