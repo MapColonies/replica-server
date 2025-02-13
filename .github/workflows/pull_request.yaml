@@ -8,7 +8,7 @@ env:
   DB_NAME: postgres
   DB_USERNAME: postgres
   DB_PASSWORD: postgres
-  DB_SCHEMA: osm_sync_tracker
+  DB_SCHEMA: replica_server
 
 jobs:
   eslint:
