@@ -25,9 +25,13 @@ export const createConnectionOptions = (dbConfig: DbConfig): DataSourceOptions =
   if (enableSslAuth && dataSourceOptions.type === 'postgres') {
     dataSourceOptions.password = undefined;
     dataSourceOptions.ssl = { key: readFileSync(sslPaths.key), cert: readFileSync(sslPaths.cert), ca: readFileSync(sslPaths.ca) };
+  } else {
+    //@ts-expect-error aaa
+    dataSourceOptions.ssl = undefined;
   }
-  return { entities: [...DB_ENTITIES, '**/DAL/typeorm/*.js'], ...dataSourceOptions };
+  return { entities: [...DB_ENTITIES, '**/models/*.js'], ...dataSourceOptions };
 };
+
 
 export const initConnection = async (dbConfig: DbConfig): Promise<DataSource> => {
   if (connectionSingleton === undefined || !connectionSingleton.isInitialized) {

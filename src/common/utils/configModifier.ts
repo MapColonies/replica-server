@@ -16,13 +16,15 @@ export function convertDBConfigToTypeorm(dbConfig: DbCommonConfig): DbConfig {
             throw new Error('Configuration error: db configuration Invalid or missing configuration.')
         }
     }
+    //@ts-expect-error wwww
     return {
+        ...dbConfig,
         enableSslAuth: false,
-        sslPaths: {
-            ca: "",
-            cert: "",
-            key: ""
-        }, // or a default value if necessary
+        // sslPaths: {
+        //     ca: "",
+        //     cert: "",
+        //     key: ""
+        // }, // or a default value if necessary
         type: "postgres",
         schema: dbConfig.schema
     };
