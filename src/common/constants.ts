@@ -10,7 +10,7 @@ export const SERVICES = {
   LOGGER: Symbol('Logger'),
   CONFIG: Symbol('Config'),
   TRACER: Symbol('Tracer'),
-  METRICS: Symbol('METRICS'),
+  METRICS: Symbol('Metrics'),
   OBJECT_STORAGE: Symbol('IObjectStorage'),
 } satisfies Record<string, symbol>;
 /* eslint-enable @typescript-eslint/naming-convention */
