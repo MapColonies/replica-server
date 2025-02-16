@@ -13,7 +13,6 @@ import { ConfigType } from './common/config';
 
 let depContainer: DependencyContainer | undefined;
 
-
 void getApp()
   .then(([container, app]) => {
     depContainer = container;
@@ -21,7 +20,7 @@ void getApp()
     const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
     const config = depContainer.resolve<ConfigType>(SERVICES.CONFIG);
     const port: number = config.get('server.port') || DEFAULT_SERVER_PORT;
-    
+
     const healthCheck = depContainer.resolve<HealthCheck>('healthcheck');
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const server = createTerminus(createServer(app), { healthChecks: { '/liveness': healthCheck, onSignal: container.resolve('onSignal') } });
