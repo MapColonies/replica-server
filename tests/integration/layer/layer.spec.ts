@@ -3,7 +3,6 @@ import { QueryFailedError, Repository, DataSource } from 'typeorm';
 import { Application } from 'express';
 import { DependencyContainer } from 'tsyringe';
 import { getConfig, initConfig } from '../../../src/common/config';
-import { convertDBConfigToTypeorm } from '../../../src/common/utils/configModifier';
 import { getApp } from '../../../src/app';
 import { Layer as LayerEntity } from '../../../src/layer/DAL/typeorm/layer';
 import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/typeorm/layerRepository';
@@ -25,8 +24,7 @@ describe('layer', function () {
     await initConfig(true);
     const config = getConfig();
     const dataSourceOptions = config.get('db');
-    const dbConfiguration = convertDBConfigToTypeorm(dataSourceOptions);
-    connection = await initConnection(dbConfiguration);
+    connection = await initConnection(dataSourceOptions);
     layerRepository = connection.getRepository(LayerEntity);
     await layerRepository.clear();
 

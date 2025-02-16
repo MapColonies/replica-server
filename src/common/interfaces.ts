@@ -11,7 +11,7 @@ export type DbConfig = {
   sslPaths: { ca: string; cert: string; key: string };
 } & DataSourceOptions;
 
-export type DbCommonConfig = Pick<vectorReplicaServerV1Type, "db">["db"];
+export type DbCommonConfig = Pick<vectorReplicaServerV1Type, 'db'>['db'];
 
 export interface OpenApiConfig {
   filePath: string;

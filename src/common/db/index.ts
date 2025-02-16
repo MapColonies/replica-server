@@ -1,14 +1,15 @@
 import { hostname } from 'os';
 import { readFileSync } from 'fs';
+import { TlsOptions } from 'tls';
 import { HealthCheck } from '@godaddy/terminus';
 import { DataSourceOptions, DataSource } from 'typeorm';
-import { DependencyContainer, FactoryFunction } from 'tsyringe';
+import { FactoryFunction } from 'tsyringe';
 import { Layer } from '../../layer/DAL/typeorm/layer';
 import { File } from '../../replica/DAL/typeorm/file';
 import { Replica } from '../../replica/DAL/typeorm/replica';
-import { DbConfig, IConfig } from '../interfaces';
+import { DbCommonConfig } from '../interfaces';
 import { promiseTimeout } from '../utils/promiseTimeout';
-import { SERVICES } from '../constants';
+import { getConfig } from '../config';
 
 let connectionSingleton: DataSource | undefined;
 
@@ -18,22 +19,30 @@ export const DB_ENTITIES = [Replica, File, Layer];
 
 export const DATA_SOURCE_PROVIDER = Symbol('dataSourceProvider');
 
-export const createConnectionOptions = (dbConfig: DbConfig): DataSourceOptions => {
-  const { enableSslAuth, sslPaths, ...dataSourceOptions } = dbConfig;
+/**
+ * A helper function that creates the typeorm DataSource options to use for creating a new DataSource.
+ * Handles SSL and registration of all required entities and migrations.
+ * @param dbConfig The typeorm postgres configuration with added SSL options.
+ * @returns Options object ready to use with typeorm.
+ */
+export const createConnectionOptions = (dbConfig: DbCommonConfig): DataSourceOptions => {
+  let ssl: TlsOptions | undefined = undefined;
+  const { ssl: inputSsl, ...dataSourceOptions } = dbConfig;
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  dataSourceOptions.extra = { application_name: `${hostname()}-${process.env.NODE_ENV ?? 'unknown_env'}` };
-  if (enableSslAuth && dataSourceOptions.type === 'postgres') {
-    dataSourceOptions.password = undefined;
-    dataSourceOptions.ssl = { key: readFileSync(sslPaths.key), cert: readFileSync(sslPaths.cert), ca: readFileSync(sslPaths.ca) };
-  } else {
-    //@ts-expect-error aaa
-    dataSourceOptions.ssl = undefined;
+  //dataSourceOptions.extra = { application_name: `${hostname()}-${process.env.NODE_ENV ?? 'unknown_env'}` };
+  if (inputSsl.enabled) {
+    ssl = { key: readFileSync(inputSsl.key), cert: readFileSync(inputSsl.cert), ca: readFileSync(inputSsl.ca) };
   }
-  return { entities: [...DB_ENTITIES, '**/models/*.js'], ...dataSourceOptions };
+  return {
+    ...dataSourceOptions,
+    type: 'postgres',
+    entities: [...DB_ENTITIES, '**/models/*.js'],
+    ssl,
+    applicationName: `${hostname()}-${process.env.NODE_ENV ?? 'unknown_env'}`,
+  };
 };
 
-
-export const initConnection = async (dbConfig: DbConfig): Promise<DataSource> => {
+export const initConnection = async (dbConfig: DbCommonConfig): Promise<DataSource> => {
   if (connectionSingleton === undefined || !connectionSingleton.isInitialized) {
     connectionSingleton = new DataSource(createConnectionOptions(dbConfig));
     await connectionSingleton.initialize();
@@ -50,9 +59,10 @@ export const getDbHealthCheckFunction = (connection: DataSource): HealthCheck =>
   };
 };
 
-export const dataSourceFactory: FactoryFunction<DataSource> = (container: DependencyContainer): DataSource => {
-  const config = container.resolve<IConfig>(SERVICES.CONFIG);
-  const dbConfig = config.get<DbConfig>('db');
+export const dataSourceFactory: FactoryFunction<DataSource> = (): DataSource => {
+  const config = getConfig();
+  const dbConfig = config.get('db');
+
   const dataSourceOptions = createConnectionOptions(dbConfig);
   return new DataSource(dataSourceOptions);
 };
