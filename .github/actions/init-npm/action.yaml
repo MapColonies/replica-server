@@ -16,4 +16,3 @@ runs:
     - name: Install TS Project dependencies
       shell: bash
       run: npm ci
-      
