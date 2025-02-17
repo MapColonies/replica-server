@@ -109,10 +109,10 @@ jobs:
       - name: Run migrations
         run: npm run typeorm -- migration:run
         env:
-          DB_HOST: ${{ env.DB_HOST }}
+          DB_HOST: ${{ DB_HOST }}
           DB_PORT: 5432
-          DB_USERNAME: ${{ env.DB_USERNAME }}
-          DB_PASSWORD: ${{ env.DB_PASSWORD }}
+          DB_USERNAME: ${{ DB_USERNAME }}
+          DB_PASSWORD: ${{ DB_PASSWORD }}
 
       - name: Run tests
         run: npm run test
