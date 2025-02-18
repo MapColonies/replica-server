@@ -28,8 +28,6 @@ export const DATA_SOURCE_PROVIDER = Symbol('dataSourceProvider');
 export const createConnectionOptions = (dbConfig: DbCommonConfig): DataSourceOptions => {
   let ssl: TlsOptions | undefined = undefined;
   const { ssl: inputSsl, ...dataSourceOptions } = dbConfig;
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  //dataSourceOptions.extra = { application_name: `${hostname()}-${process.env.NODE_ENV ?? 'unknown_env'}` };
   if (inputSsl.enabled) {
     ssl = { key: readFileSync(inputSsl.key), cert: readFileSync(inputSsl.cert), ca: readFileSync(inputSsl.ca) };
   }
