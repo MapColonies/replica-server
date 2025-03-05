@@ -43,7 +43,7 @@ export const generateFakeReplicaUpdate = (params: StringifiedReplicaUpdate = {})
 };
 
 export const generateMockObjectStorageConfig = (includeProjectId = false): IObjectStorageConfig => {
-  const objectStorageConfig: IObjectStorageConfig = { protocol: 'http', host: 'some_storage_host', port: '9000' };
+  const objectStorageConfig: IObjectStorageConfig = { protocol: 'http', host: 'some_storage_host', port: 9000 };
   if (includeProjectId) {
     objectStorageConfig.projectId = 'some_project_id';
   }
