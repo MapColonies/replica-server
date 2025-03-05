@@ -1,42 +1,41 @@
-/* eslint-disable import/first */
-// this import must be called before the first import of tsyring
+// this import must be called before the first import of tsyringe
 import 'reflect-metadata';
 import { createServer } from 'http';
-import { createTerminus, HealthCheck } from '@godaddy/terminus';
+import { createTerminus } from '@godaddy/terminus';
 import { Logger } from '@map-colonies/js-logger';
 import { DependencyContainer } from 'tsyringe';
-import { DEFAULT_SERVER_PORT, SERVICES } from './common/constants';
+import { HEALTHCHECK, ON_SIGNAL, SERVICES } from '@common/constants';
+import { ConfigType } from '@common/config';
 import { getApp } from './app';
-import { ShutdownHandler } from './common/shutdownHandler';
-import { ConfigType } from './common/config';
 
 let depContainer: DependencyContainer | undefined;
 
 void getApp()
-  .then(([container, app]) => {
+  .then(([app, container]) => {
     depContainer = container;
 
     const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
     const config = depContainer.resolve<ConfigType>(SERVICES.CONFIG);
-    const port: number = config.get('server.port') || DEFAULT_SERVER_PORT;
+    const port = config.get('server.port');
 
-    const healthCheck = depContainer.resolve<HealthCheck>('healthcheck');
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    const server = createTerminus(createServer(app), { healthChecks: { '/liveness': healthCheck, onSignal: container.resolve('onSignal') } });
+    const server = createTerminus(createServer(app), {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      healthChecks: { '/liveness': depContainer.resolve(HEALTHCHECK) },
+      onSignal: depContainer.resolve(ON_SIGNAL),
+    });
 
     server.listen(port, () => {
       logger.info(`app started on port ${port}`);
     });
   })
   .catch(async (error: Error) => {
-    const errorLogger =
-      depContainer?.isRegistered(SERVICES.LOGGER) == true
-        ? depContainer.resolve<Logger>(SERVICES.LOGGER).error.bind(depContainer.resolve<Logger>(SERVICES.LOGGER))
-        : console.error;
-    errorLogger({ msg: '😢 - failed initializing the server', err: error });
+    console.error('😢 - failed initializing the server');
+    console.error(error);
 
-    if (depContainer?.isRegistered(ShutdownHandler) == true) {
-      const shutdownHandler = depContainer.resolve(ShutdownHandler);
-      await shutdownHandler.onShutdown();
+    if (depContainer?.isRegistered(ON_SIGNAL) == true) {
+      const shutDown: () => Promise<void> = depContainer.resolve(ON_SIGNAL);
+      await shutDown();
     }
+
+    process.exit(1);
   });
