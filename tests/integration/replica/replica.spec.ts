@@ -2,8 +2,9 @@ import httpStatusCodes, { StatusCodes } from 'http-status-codes';
 import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
+import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { Application } from 'express';
-import { getConfig, initConfig } from '../../../src/common/config';
+import { initConfig } from '../../../src/common/config';
 import { getApp } from '../../../src/app';
 import {
   BEFORE_ALL_TIMEOUT,
@@ -11,16 +12,14 @@ import {
   createFakeDateBetweenBottomAndTop,
   FLOW_TEST_TIMEOUT,
   getBaseRegisterOptions,
+  getMockApp,
   sortByOrderFilter,
   TOP_TO,
 } from '../helpers';
 import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, SERVICES } from '../../../src/common/constants';
-import { DATA_SOURCE_PROVIDER } from '../../../src/common/db';
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
 import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
-import { Replica } from '../../../src/replica/DAL/typeorm/replica';
-import { initConnection } from '../../../src/common/db';
 import {
   generateFakeBaseFilter,
   generateFakePrivateFilter,
@@ -34,36 +33,31 @@ import {
   convertReplicaToUrls,
 } from '../../helpers/helper';
 import { FILE_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeorm/fileRepository';
-import { REPLICA_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeorm/replicaRepository';
+import { REPLICA_CUSTOM_REPOSITORY_SYMBOL, ReplicaRepository } from '../../../src/replica/DAL/typeorm/replicaRepository';
 import { ReplicaRequestSender } from './helpers/requestSender';
 
 describe('replica', function () {
   let app: Application;
   let container: DependencyContainer;
-  let connection: DataSource;
   let requestSender: ReplicaRequestSender;
   let mockReplicaRequestSender: ReplicaRequestSender;
 
   beforeAll(async function () {
     await initConfig(true);
-    const config = getConfig();
-    const dataSourceOptions = config.get('db');
-    connection = await initConnection(dataSourceOptions);
-    const replicaRepository = connection.getRepository(Replica);
-    await replicaRepository.delete({});
 
     const registerOptions = getBaseRegisterOptions();
-    registerOptions.override.push(
-      { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } },
-      { token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } }
-    );
+    registerOptions.override.push({ token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } });
 
-    [container, app] = await getApp(registerOptions);
+    [app, container] = await getApp(registerOptions);
+
+    const replicaRepository = container.resolve<ReplicaRepository>(REPLICA_CUSTOM_REPOSITORY_SYMBOL);
+    await replicaRepository.delete({});
     requestSender = new ReplicaRequestSender(app);
   }, BEFORE_ALL_TIMEOUT);
 
   afterAll(async function () {
-    await connection.destroy();
+    const cleanupRegistry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
+    await cleanupRegistry.trigger();
     container.reset();
   });
 
@@ -110,7 +104,7 @@ describe('replica', function () {
 
           const mockRegisterOptions = getBaseRegisterOptions();
           mockRegisterOptions.override.push({ token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
-          const [, mockApp] = await getApp(mockRegisterOptions);
+          const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
           mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
           const response = await mockReplicaRequestSender.getReplicaById(replicaId);
 
@@ -118,6 +112,8 @@ describe('replica', function () {
 
           expect(response.status).toBe(httpStatusCodes.OK);
           expect(response.body).toMatchObject({ ...restOfMetadata, urls });
+
+          await cleanup();
         },
         FLOW_TEST_TIMEOUT
       );
@@ -975,21 +971,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const findOneReplicaWithFilesMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findOneReplicaWithFiles: findOneReplicaWithFilesMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findOneReplicaWithFiles: findOneReplicaWithFilesMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicaById(faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -997,21 +989,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const findLatestReplicaWithFilesMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findLatestReplicaWithFiles: findLatestReplicaWithFilesMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findLatestReplicaWithFiles: findLatestReplicaWithFilesMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getLatestReplica(generateFakeBaseFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1019,21 +1007,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const findReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findReplicas: findReplicasMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findReplicas: findReplicasMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicas(generateFakePublicFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1047,21 +1031,17 @@ describe('replica', function () {
           token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findOneReplica: findOneReplicaMock } },
         });
-        mockRegisterOptions.override.push(
-          {
-            token: FILE_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: FILE_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.postFile(faker.datatype.uuid(), faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1070,21 +1050,17 @@ describe('replica', function () {
         const createReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const findOneReplicaMock = jest.fn().mockResolvedValue(false);
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { createReplica: createReplicaMock, findOneReplica: findOneReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { createReplica: createReplicaMock, findOneReplica: findOneReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.postReplica(generateFakeReplica());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1093,21 +1069,17 @@ describe('replica', function () {
         const updateOneReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const findOneReplicaMock = jest.fn().mockResolvedValue(true);
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { updateOneReplica: updateOneReplicaMock, findOneReplica: findOneReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { updateOneReplica: updateOneReplicaMock, findOneReplica: findOneReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.patchReplica(faker.datatype.uuid(), generateFakeReplicaUpdate());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1115,21 +1087,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const updateReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { updateReplicas: updateReplicasMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { updateReplicas: updateReplicasMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.patchReplicas(generateFakePrivateFilter(), generateFakeReplicaUpdate());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1137,21 +1105,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const deleteOneReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { deleteOneReplica: deleteOneReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { deleteOneReplica: deleteOneReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.deleteReplica(faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1159,21 +1123,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const deleteReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { deleteReplicas: deleteReplicasMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { deleteReplicas: deleteReplicasMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.deleteReplicas(generateFakePrivateFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
   });
