@@ -75,7 +75,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       {
         token: SERVICES.METRICS,
         provider: {
-          useValue: instancePerContainerCachingFactory((container) => {
+          useFactory: instancePerContainerCachingFactory((container) => {
             const metricsRegistry = new Registry();
             const config = container.resolve<ConfigType>(SERVICES.CONFIG);
             config.initializeMetrics(metricsRegistry);
@@ -86,8 +86,8 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       {
         token: SERVICES.OBJECT_STORAGE,
         provider: {
-          useValue: instancePerContainerCachingFactory((container) => {
-            const config = container.resolve<ConfigType>('config');
+          useFactory: instancePerContainerCachingFactory((container) => {
+            const config = container.resolve<ConfigType>(SERVICES.CONFIG);
             return config.get('objectStorage');
           }),
         },
