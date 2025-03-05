@@ -13,6 +13,7 @@ tags:
     description: the endpoints which are exposed to the client
   - name: private
     description: the endpoints which are exposed only to inner services
+security: []
 paths:
   /replica:
     get:
@@ -61,8 +62,6 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/layerId'
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: All the replicas returned by the search
@@ -96,8 +95,6 @@ paths:
                     - layerId
                     - bucketName
                     - timestamp
-      security:
-        - ApiKeyAuth: []
       responses:
         '201':
           description: Created
@@ -117,8 +114,6 @@ paths:
       summary: Update all replicas based on condition
       parameters:
         - $ref: '#/components/parameters/filterOptions'
-      security:
-        - ApiKeyAuth: []
       requestBody:
         content:
           application/json:
@@ -141,8 +136,6 @@ paths:
       summary: Delete replicas by filters
       parameters:
         - $ref: '#/components/parameters/filterOptions'
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: Deleted
@@ -186,8 +179,6 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/layerId'
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: All the replicas returned by the search
@@ -215,8 +206,6 @@ paths:
             $ref: '#/components/schemas/replicaId'
           required: true
           description: id of the replica to get
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: OK
@@ -243,8 +232,6 @@ paths:
             $ref: '#/components/schemas/replicaId'
           required: true
           description: id of the replica to patch
-      security:
-        - ApiKeyAuth: []
       requestBody:
         content:
           application/json:
@@ -274,8 +261,6 @@ paths:
             $ref: '#/components/schemas/replicaId'
           required: true
           description: id of the replica to delete
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: Deleted
@@ -305,8 +290,7 @@ paths:
             $ref: '#/components/schemas/replicaId'
           required: true
           description: id of the replica to create file for
-      security:
-        - ApiKeyAuth: []
+
       requestBody:
         content:
           application/json:
@@ -335,8 +319,6 @@ paths:
       tags:
         - public
       summary: Get a list of available layers and their corresponding geometry types
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: OK
