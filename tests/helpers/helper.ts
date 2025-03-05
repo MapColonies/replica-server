@@ -19,7 +19,7 @@ const generateFakeLayer = (): Layer => {
 };
 
 export const generateFakeLayers = (): Layer[] => {
-  const layers = [];
+  const layers: Layer[] = [];
   const amount = faker.datatype.number({ min: 1, max: 10 });
   for (let i = 0; i < amount; i++) {
     layers.push(generateFakeLayer());
@@ -66,7 +66,7 @@ export const generateFakeReplicaWithFiles = (
 ): { replica: StringifiedReplica & { files: File[] }; fileIds: string[] } => {
   const replica = generateFakeReplica(params);
   const amount = params.amount ?? faker.datatype.number({ min: 1, max: 10 });
-  const files = [];
+  const files: File[] = [];
   for (let i = 0; i < amount; i++) {
     files.push({ replicaId: replica.replicaId, fileId: faker.datatype.uuid() });
   }
