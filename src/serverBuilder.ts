@@ -7,10 +7,11 @@ import { middleware as OpenApiMiddleware } from 'express-openapi-validator';
 import { inject, injectable } from 'tsyringe';
 import { Logger } from '@map-colonies/js-logger';
 import httpLogger from '@map-colonies/express-access-log-middleware';
-import { ConfigType } from '@common/config';
+import { getTraceContexHeaderMiddleware } from '@map-colonies/telemetry';
 import { collectMetricsExpressMiddleware } from '@map-colonies/telemetry/prom-metrics';
 import { Registry } from 'prom-client';
-import { SERVICES } from './common/constants';
+import { ConfigType } from '@common/config';
+import { SERVICES } from '@common/constants';
 import { REPLICA_ROUTER_SYMBOL } from './replica/routes/replicaRouter';
 import { LAYER_ROUTER_SYMBOL } from './layer/routes/layerRouter';
 
@@ -53,24 +54,18 @@ export class ServerBuilder {
 
   private registerPreRoutesMiddleware(): void {
     this.serverInstance.use(collectMetricsExpressMiddleware({ registry: this.metricsRegistry }));
-    this.serverInstance.use(httpLogger({ logger: this.logger }));
+    this.serverInstance.use(httpLogger({ logger: this.logger, ignorePaths: ['/metrics'] }));
 
     if (this.config.get('server.response.compression.enabled')) {
       this.serverInstance.use(compression(this.config.get('server.response.compression.options') as unknown as compression.CompressionFilter));
     }
 
     this.serverInstance.use(bodyParser.json(this.config.get('server.request.payload')));
+    this.serverInstance.use(getTraceContexHeaderMiddleware());
 
     const ignorePathRegex = new RegExp(`^${this.config.get('openapiConfig.basePath')}/.*`, 'i');
     const apiSpecPath = this.config.get('openapiConfig.filePath');
-    this.serverInstance.use(
-      OpenApiMiddleware({
-        apiSpec: apiSpecPath,
-        validateRequests: true,
-        ignorePaths: ignorePathRegex,
-        validateSecurity: false,
-      })
-    );
+    this.serverInstance.use(OpenApiMiddleware({ apiSpec: apiSpecPath, validateRequests: true, ignorePaths: ignorePathRegex }));
   }
 
   private registerPostRoutesMiddleware(): void {
