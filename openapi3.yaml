@@ -4,7 +4,7 @@ info:
   description: >-
     A RESTful API for querying and saving geographic replicas (snapshot and
     deltas)
-  version: 1.0.1
+  version: 2.0.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -290,7 +290,6 @@ paths:
             $ref: '#/components/schemas/replicaId'
           required: true
           description: id of the replica to create file for
-
       requestBody:
         content:
           application/json:
