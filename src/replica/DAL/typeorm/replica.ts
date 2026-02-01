@@ -23,17 +23,17 @@ export class Replica implements IReplica {
   public isHidden!: boolean;
 
   @Index()
-  @Column({ name: 'bucket_name', length: BUCKET_NAME_MAX_LENGTH_LIMIT })
+  @Column({ name: 'bucket_name', type: 'character varying', length: BUCKET_NAME_MAX_LENGTH_LIMIT })
   public bucketName!: string;
 
   @Index()
-  @Column({ type: 'timestamptz' })
+  @Column({ type: 'timestamp with time zone' })
   public timestamp!: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp without time zone' })
   public createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp without time zone' })
   public updatedAt!: Date;
 
   @OneToMany(() => File, (file) => file.replica)

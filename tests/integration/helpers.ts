@@ -3,9 +3,11 @@ import jsLogger from '@map-colonies/js-logger';
 import { trace } from '@opentelemetry/api';
 import { snakeCase } from 'snake-case';
 import { SnakeCasedProperties } from 'type-fest';
-import { Services } from '../../src/common/constants';
+import { CleanupRegistry } from '@map-colonies/cleanup-registry';
+import { SERVICES } from '../../src/common/constants';
 import { SortFilter } from '../../src/common/types';
 import { RegisterOptions } from '../../src/containerConfig';
+import { getApp } from '../../src/app';
 
 export const BEFORE_ALL_TIMEOUT = 20000;
 
@@ -20,11 +22,24 @@ export const TOP_TO = faker.date.future();
 export const getBaseRegisterOptions = (): Required<RegisterOptions> => {
   return {
     override: [
-      { token: Services.LOGGER, provider: { useValue: jsLogger({ enabled: false }) } },
-      { token: Services.TRACER, provider: { useValue: trace.getTracer('testTracer') } },
+      { token: SERVICES.LOGGER, provider: { useValue: jsLogger({ enabled: false }) } },
+      { token: SERVICES.TRACER, provider: { useValue: trace.getTracer('testTracer') } },
     ],
     useChild: true,
   };
+};
+
+export const getMockApp = async (
+  mockRegisterOptions: Required<RegisterOptions>
+): Promise<[...(ReturnType<typeof getApp> extends Promise<infer U> ? U : never), () => Promise<void>]> => {
+  const [app, container] = await getApp(mockRegisterOptions);
+  const cleanup = async (): Promise<void> => {
+    const cleanupRegistry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
+
+    await cleanupRegistry.trigger();
+    container.reset();
+  };
+  return [app, container, cleanup];
 };
 
 export const convertObjectToSnakeCase = <T extends Record<string, unknown>>(obj: T): SnakeCasedProperties<T> => {

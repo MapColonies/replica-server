@@ -7,15 +7,15 @@ export class Layer implements ILayer {
   @PrimaryColumn({ name: 'layer_id', type: 'integer' })
   public layerId!: number;
 
-  @Column({ name: 'layer_name' })
+  @Column({ name: 'layer_name', type: 'character varying' })
   public layerName!: string;
 
   @Column({ name: 'geometry_types', type: 'enum', enum: GeometryType, array: true })
   public geometryTypes!: GeometryType[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp without time zone' })
   public createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp without time zone' })
   public updatedAt!: Date;
 }

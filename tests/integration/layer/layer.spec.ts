@@ -1,41 +1,41 @@
-import config from 'config';
 import httpStatusCodes from 'http-status-codes';
-import { QueryFailedError, Repository, DataSource } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Application } from 'express';
+import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { DependencyContainer } from 'tsyringe';
+import { initConfig } from '../../../src/common/config';
 import { getApp } from '../../../src/app';
 import { Layer as LayerEntity } from '../../../src/layer/DAL/typeorm/layer';
-import { LAYER_REPOSITORY_SYMBOL } from '../../../src/layer/DAL/typeorm/layerRepository';
+import { LAYER_REPOSITORY_SYMBOL, LayerRepository } from '../../../src/layer/DAL/typeorm/layerRepository';
 import { Layer } from '../../../src/layer/models/layer';
-import { DbConfig } from '../../../src/common/interfaces';
-import { BEFORE_ALL_TIMEOUT, getBaseRegisterOptions } from '../helpers';
-import { DATA_SOURCE_PROVIDER, initConnection } from '../../../src/common/db';
+import { BEFORE_ALL_TIMEOUT, getBaseRegisterOptions, getMockApp } from '../helpers';
 import { generateFakeLayers } from '../../helpers/helper';
+import { SERVICES } from '../../../src/common/constants';
 import { LayerRequestSender } from './helpers/requestSender';
 
 describe('layer', function () {
   let app: Application;
   let container: DependencyContainer;
-  let connection: DataSource;
   let requestSender: LayerRequestSender;
   let mockLayerRequestSender: LayerRequestSender;
   let layerRepository: Repository<LayerEntity>;
 
   beforeAll(async function () {
-    const dataSourceOptions = config.get<DbConfig>('db');
-    connection = await initConnection(dataSourceOptions);
-    layerRepository = connection.getRepository(LayerEntity);
-    await layerRepository.clear();
+    await initConfig(true);
 
     const registerOptions = getBaseRegisterOptions();
-    registerOptions.override.push({ token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } });
 
-    [container, app] = await getApp(registerOptions);
+    [app, container] = await getApp(registerOptions);
     requestSender = new LayerRequestSender(app);
+
+    layerRepository = container.resolve<LayerRepository>(LAYER_REPOSITORY_SYMBOL);
+    await layerRepository.clear();
   }, BEFORE_ALL_TIMEOUT);
 
   afterAll(async function () {
-    await connection.destroy();
+    const cleanupRegistry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
+    await cleanupRegistry.trigger();
+
     container.reset();
   });
 
@@ -67,19 +67,18 @@ describe('layer', function () {
     it('should return 500 if the db throws an error', async function () {
       const findAllLayersMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
       const mockRegisterOptions = getBaseRegisterOptions();
-      mockRegisterOptions.override.push(
-        {
-          token: LAYER_REPOSITORY_SYMBOL,
-          provider: { useValue: { findAllLayers: findAllLayersMock } },
-        },
-        { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } }
-      );
-      const [, mockApp] = await getApp(mockRegisterOptions);
+      mockRegisterOptions.override.push({
+        token: LAYER_REPOSITORY_SYMBOL,
+        provider: { useValue: { findAllLayers: findAllLayersMock } },
+      });
+      const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
       mockLayerRequestSender = new LayerRequestSender(mockApp);
       const response = await mockLayerRequestSender.getLayers();
 
       expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
       expect(response.body).toHaveProperty('message', 'failed');
+
+      await cleanup();
     });
   });
 });

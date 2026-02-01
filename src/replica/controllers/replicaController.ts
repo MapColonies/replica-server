@@ -4,7 +4,7 @@ import httpStatus, { StatusCodes } from 'http-status-codes';
 import { HttpError } from '@map-colonies/error-express-handler';
 import { injectable, inject } from 'tsyringe';
 import { SnakeCasedProperties } from 'type-fest';
-import { Services } from '../../common/constants';
+import { SERVICES } from '../../common/constants';
 import { FileAlreadyExistsError, ReplicaAlreadyExistsError, ReplicaNotFoundError } from '../models/errors';
 import { ReplicaCreateBody, ReplicaMetadata, ReplicaResponse } from '../models/replica';
 import { ReplicaManager } from '../models/replicaManager';
@@ -27,7 +27,10 @@ type DeleteReplicasHandler = RequestHandler<undefined, ReplicaResponse[], undefi
 
 @injectable()
 export class ReplicaController {
-  public constructor(@inject(Services.LOGGER) private readonly logger: Logger, @inject(ReplicaManager) private readonly manager: ReplicaManager) {}
+  public constructor(
+    @inject(SERVICES.LOGGER) private readonly logger: Logger,
+    @inject(ReplicaManager) private readonly manager: ReplicaManager
+  ) {}
 
   public getReplicaById: GetReplicaByIdHandler = async (req, res, next) => {
     try {

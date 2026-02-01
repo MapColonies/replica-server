@@ -1,9 +1,13 @@
+const { pathsToModuleNameMapper } = require('ts-jest');
+const { compilerOptions } = require('../../../tsconfig.json');
+
+/** @type {import('jest').Config} */
 module.exports = {
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['@swc/jest'],
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/matchers.js'],
   coverageReporters: ['text', 'html'],
+  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>/' }),
   collectCoverage: true,
   collectCoverageFrom: [
     '<rootDir>/src/**/*.ts',
@@ -17,16 +21,16 @@ module.exports = {
   coverageDirectory: '<rootDir>/coverage',
   rootDir: '../../../.',
   testMatch: ['<rootDir>/tests/integration/**/*.spec.ts'],
-  setupFiles: ['<rootDir>/tests/configurations/jest.setup.js'],
+  setupFiles: ['<rootDir>/tests/configurations/jest.setup.ts'],
+  setupFilesAfterEnv: ['jest-openapi', '<rootDir>/tests/configurations/initJestOpenapi.setup.ts', '<rootDir>/tests/matchers.js'],
   reporters: [
     'default',
     [
       'jest-html-reporters',
-      { multipleReportsUnitePath: './report', pageTitle: 'integration', publicPath: './reports', filename: 'integration.html' },
+      { multipleReportsUnitePath: './reports', pageTitle: 'integration', publicPath: './reports', filename: 'integration.html' },
     ],
   ],
   moduleDirectories: ['node_modules', 'src'],
-  preset: 'ts-jest',
   testEnvironment: 'node',
   coverageThreshold: {
     global: {

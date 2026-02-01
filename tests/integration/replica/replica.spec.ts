@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import config from 'config';
 import httpStatusCodes, { StatusCodes } from 'http-status-codes';
 import { DependencyContainer } from 'tsyringe';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
+import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { Application } from 'express';
+import { initConfig } from '../../../src/common/config';
 import { getApp } from '../../../src/app';
 import {
   BEFORE_ALL_TIMEOUT,
@@ -12,17 +12,14 @@ import {
   createFakeDateBetweenBottomAndTop,
   FLOW_TEST_TIMEOUT,
   getBaseRegisterOptions,
+  getMockApp,
   sortByOrderFilter,
   TOP_TO,
 } from '../helpers';
-import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, Services } from '../../../src/common/constants';
-import { DATA_SOURCE_PROVIDER } from '../../../src/common/db';
+import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, SERVICES } from '../../../src/common/constants';
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
-import { DbConfig } from '../../../src/common/interfaces';
 import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
-import { Replica } from '../../../src/replica/DAL/typeorm/replica';
-import { initConnection } from '../../../src/common/db';
 import {
   generateFakeBaseFilter,
   generateFakePrivateFilter,
@@ -36,34 +33,31 @@ import {
   convertReplicaToUrls,
 } from '../../helpers/helper';
 import { FILE_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeorm/fileRepository';
-import { REPLICA_CUSTOM_REPOSITORY_SYMBOL } from '../../../src/replica/DAL/typeorm/replicaRepository';
+import { REPLICA_CUSTOM_REPOSITORY_SYMBOL, ReplicaRepository } from '../../../src/replica/DAL/typeorm/replicaRepository';
 import { ReplicaRequestSender } from './helpers/requestSender';
 
 describe('replica', function () {
   let app: Application;
   let container: DependencyContainer;
-  let connection: DataSource;
   let requestSender: ReplicaRequestSender;
   let mockReplicaRequestSender: ReplicaRequestSender;
 
   beforeAll(async function () {
-    const dataSourceOptions = config.get<DbConfig>('db');
-    connection = await initConnection(dataSourceOptions);
-    const replicaRepository = connection.getRepository(Replica);
-    await replicaRepository.delete({});
+    await initConfig(true);
 
     const registerOptions = getBaseRegisterOptions();
-    registerOptions.override.push(
-      { token: DATA_SOURCE_PROVIDER, provider: { useValue: connection } },
-      { token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } }
-    );
+    registerOptions.override.push({ token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig() } });
 
-    [container, app] = await getApp(registerOptions);
+    [app, container] = await getApp(registerOptions);
+
+    const replicaRepository = container.resolve<ReplicaRepository>(REPLICA_CUSTOM_REPOSITORY_SYMBOL);
+    await replicaRepository.delete({});
     requestSender = new ReplicaRequestSender(app);
   }, BEFORE_ALL_TIMEOUT);
 
   afterAll(async function () {
-    await connection.destroy();
+    const cleanupRegistry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
+    await cleanupRegistry.trigger();
     container.reset();
   });
 
@@ -109,8 +103,8 @@ describe('replica', function () {
           expect(await requestSender.patchReplica(replicaId, { isHidden: false })).toHaveStatus(StatusCodes.OK);
 
           const mockRegisterOptions = getBaseRegisterOptions();
-          mockRegisterOptions.override.push({ token: Services.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
-          const [, mockApp] = await getApp(mockRegisterOptions);
+          mockRegisterOptions.override.push({ token: SERVICES.OBJECT_STORAGE, provider: { useValue: generateMockObjectStorageConfig(true) } });
+          const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
           mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
           const response = await mockReplicaRequestSender.getReplicaById(replicaId);
 
@@ -118,6 +112,8 @@ describe('replica', function () {
 
           expect(response.status).toBe(httpStatusCodes.OK);
           expect(response.body).toMatchObject({ ...restOfMetadata, urls });
+
+          await cleanup();
         },
         FLOW_TEST_TIMEOUT
       );
@@ -589,7 +585,7 @@ describe('replica', function () {
         const response = await requestSender.getReplicaById('invalidId');
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', 'request.params.replicaId should match format "uuid"');
+        expect(response.body).toHaveProperty('message', 'request/params/replicaId must match format "uuid"');
       });
 
       it('should return 404 if the replica with the given replicaId was not found', async function () {
@@ -616,13 +612,13 @@ describe('replica', function () {
       it.each([
         [
           generateFakeBaseFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request/query/replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeBaseFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/query/geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeBaseFilter({ layerId: faker.random.word() as unknown as number }), `request.query.layer_id should be number`],
+        [generateFakeBaseFilter({ layerId: faker.random.word() as unknown as number }), `request/query/layer_id must be number`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -639,7 +635,7 @@ describe('replica', function () {
         const response = await requestSender.getLatestReplica(restOfFilter);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', `request.query should have required property 'replica_type'`);
+        expect(response.body).toHaveProperty('message', `request/query must have required property 'replica_type'`);
       });
 
       it('should return 400 if geometry type is missing on query filter', async function () {
@@ -648,7 +644,7 @@ describe('replica', function () {
         const response = await requestSender.getLatestReplica(restOfFilter);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', `request.query should have required property 'geometry_type'`);
+        expect(response.body).toHaveProperty('message', `request/query must have required property 'geometry_type'`);
       });
 
       it('should return 400 if layer id is missing on query filter', async function () {
@@ -657,7 +653,7 @@ describe('replica', function () {
         const response = await requestSender.getLatestReplica(restOfFilter);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', `request.query should have required property 'layer_id'`);
+        expect(response.body).toHaveProperty('message', `request/query must have required property 'layer_id'`);
       });
 
       it('should return 404 if no replica was found based on the query filter', async function () {
@@ -695,16 +691,16 @@ describe('replica', function () {
       it.each([
         [
           generateFakePublicFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request/query/replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakePublicFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/query/geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePublicFilter({ layerId: faker.random.word() as unknown as number }), `request.query.layer_id should be number`],
-        [generateFakePublicFilter({ exclusiveFrom: faker.random.word() }), `request.query.exclusive_from should match format "date-time"`],
-        [generateFakePublicFilter({ to: faker.random.word() }), `request.query.to should match format "date-time"`],
-        [generateFakePublicFilter({ sort: 'bad' as SortFilter }), `request.query.sort should be equal to one of the allowed values: asc, desc`],
+        [generateFakePublicFilter({ layerId: faker.random.word() as unknown as number }), `request/query/layer_id must be number`],
+        [generateFakePublicFilter({ exclusiveFrom: faker.random.word() }), `request/query/exclusive_from must match format "date-time"`],
+        [generateFakePublicFilter({ to: faker.random.word() }), `request/query/to must match format "date-time"`],
+        [generateFakePublicFilter({ sort: 'bad' as SortFilter }), `request/query/sort must be equal to one of the allowed values: asc, desc`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -721,7 +717,7 @@ describe('replica', function () {
         const response = await requestSender.getReplicas(restOfFilter);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', `request.query should have required property 'replica_type'`);
+        expect(response.body).toHaveProperty('message', `request/query must have required property 'replica_type'`);
       });
 
       it('should return 400 if the filter is missing geometry_type parameter', async function () {
@@ -730,7 +726,7 @@ describe('replica', function () {
         const response = await requestSender.getReplicas(restOfFilter);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', `request.query should have required property 'geometry_type'`);
+        expect(response.body).toHaveProperty('message', `request/query must have required property 'geometry_type'`);
       });
 
       it('should return 400 if the filter is missing layer_id parameter', async function () {
@@ -739,7 +735,7 @@ describe('replica', function () {
         const response = await requestSender.getReplicas(restOfFilter);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', `request.query should have required property 'layer_id'`);
+        expect(response.body).toHaveProperty('message', `request/query must have required property 'layer_id'`);
       });
     });
 
@@ -749,7 +745,7 @@ describe('replica', function () {
 
         expect(response).toHaveProperty('status', httpStatusCodes.BAD_REQUEST);
         const message = (response.body as { message: string }).message;
-        expect(message).toContain('request.params.replicaId should match format "uuid"');
+        expect(message).toContain('request/params/replicaId must match format "uuid"');
       });
 
       it('should return 400 status code if the file id is not valid', async function () {
@@ -757,7 +753,7 @@ describe('replica', function () {
 
         expect(response).toHaveProperty('status', httpStatusCodes.BAD_REQUEST);
         const message = (response.body as { message: string }).message;
-        expect(message).toContain('request.body.fileId should match format "uuid"');
+        expect(message).toContain('request/body/fileId must match format "uuid"');
       });
 
       it('should return 404 status code if the requested replica id does not exist', async function () {
@@ -785,24 +781,24 @@ describe('replica', function () {
 
     describe('POST /replica', function () {
       it.each([
-        [generateFakeReplica({ replicaId: faker.random.word() }), `request.body.replicaId should match format "uuid"`],
+        [generateFakeReplica({ replicaId: faker.random.word() }), `request/body/replicaId must match format "uuid"`],
         [
           generateFakeReplica({ replicaType: faker.random.word() as ReplicaType }),
-          `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
+          `request/body/replicaType must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeReplica({ geometryType: faker.random.word() as GeometryType }),
-          `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/body/geometryType must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeReplica({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
-        [generateFakeReplica({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
+        [generateFakeReplica({ layerId: faker.random.word() as unknown as number }), `request/body/layerId must be number`],
+        [generateFakeReplica({ timestamp: faker.random.word() }), `request/body/timestamp must match format "date-time"`],
         [
           generateFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
-          `request.body.bucketName should NOT be shorter than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
+          `request/body/bucketName must NOT have fewer than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
         ],
         [
           generateFakeReplica({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
-          `request.body.bucketName should NOT be longer than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
+          `request/body/bucketName must NOT have more than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
         ],
       ])('should return 400 status code if replica body has an invalid parameter', async function (replica: StringifiedReplica, bodyMessage: string) {
         const response = await requestSender.postReplica(replica);
@@ -829,28 +825,28 @@ describe('replica', function () {
         const response = await requestSender.patchReplica(faker.random.word(), replicaUpdate);
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', 'request.params.replicaId should match format "uuid"');
+        expect(response.body).toHaveProperty('message', 'request/params/replicaId must match format "uuid"');
       });
 
       it.each([
         [
           generateFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
-          `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
+          `request/body/replicaType must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
-          `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/body/geometryType must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request.body.isHidden should be boolean`],
-        [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
-        [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
+        [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request/body/isHidden must be boolean`],
+        [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request/body/layerId must be number`],
+        [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request/body/timestamp must match format "date-time"`],
         [
           generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
-          `request.body.bucketName should NOT be shorter than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
+          `request/body/bucketName must NOT have fewer than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
         ],
         [
           generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
-          `request.body.bucketName should NOT be longer than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
+          `request/body/bucketName must NOT have more than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
         ],
       ])(
         'should return 400 status code if update replica body has an invalid parameter',
@@ -876,16 +872,16 @@ describe('replica', function () {
       it.each([
         [
           generateFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.filter.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request/query/filter/replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/query/filter/geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request.query.filter.layer_id should be number`],
-        [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
-        [generateFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
-        [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request.query.filter.is_hidden should be boolean`],
+        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request/query/filter/layer_id must be number`],
+        [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request/query/filter/exclusive_from must match format "date-time"`],
+        [generateFakePrivateFilter({ to: faker.random.word() }), `request/query/filter/to must match format "date-time"`],
+        [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request/query/filter/is_hidden must be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -899,22 +895,22 @@ describe('replica', function () {
       it.each([
         [
           generateFakeReplicaUpdate({ replicaType: faker.random.word() as ReplicaType }),
-          `request.body.replicaType should be equal to one of the allowed values: snapshot, delta`,
+          `request/body/replicaType must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakeReplicaUpdate({ geometryType: faker.random.word() as GeometryType }),
-          `request.body.geometryType should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/body/geometryType must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request.body.isHidden should be boolean`],
-        [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request.body.layerId should be number`],
-        [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request.body.timestamp should match format "date-time"`],
+        [generateFakeReplicaUpdate({ isHidden: faker.random.word() as unknown as boolean }), `request/body/isHidden must be boolean`],
+        [generateFakeReplicaUpdate({ layerId: faker.random.word() as unknown as number }), `request/body/layerId must be number`],
+        [generateFakeReplicaUpdate({ timestamp: faker.random.word() }), `request/body/timestamp must match format "date-time"`],
         [
           generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MIN_LENGTH_LIMIT - 1 }) }),
-          `request.body.bucketName should NOT be shorter than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
+          `request/body/bucketName must NOT have fewer than ${BUCKET_NAME_MIN_LENGTH_LIMIT} characters`,
         ],
         [
           generateFakeReplicaUpdate({ bucketName: faker.random.alpha({ count: BUCKET_NAME_MAX_LENGTH_LIMIT + 1 }) }),
-          `request.body.bucketName should NOT be longer than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
+          `request/body/bucketName must NOT have more than ${BUCKET_NAME_MAX_LENGTH_LIMIT} characters`,
         ],
       ])(
         'should return 400 status code if update replica body has an invalid parameter',
@@ -932,7 +928,7 @@ describe('replica', function () {
         const response = await requestSender.deleteReplica(faker.random.word());
 
         expect(response.status).toBe(httpStatusCodes.BAD_REQUEST);
-        expect(response.body).toHaveProperty('message', 'request.params.replicaId should match format "uuid"');
+        expect(response.body).toHaveProperty('message', 'request/params/replicaId must match format "uuid"');
       });
 
       it('should return 404 status code if the requested replica id does not exist', async function () {
@@ -948,16 +944,16 @@ describe('replica', function () {
       it.each([
         [
           generateFakePrivateFilter({ replicaType: faker.random.word() as ReplicaType }),
-          `request.query.filter.replica_type should be equal to one of the allowed values: snapshot, delta`,
+          `request/query/filter/replica_type must be equal to one of the allowed values: snapshot, delta`,
         ],
         [
           generateFakePrivateFilter({ geometryType: faker.random.word() as GeometryType }),
-          `request.query.filter.geometry_type should be equal to one of the allowed values: point, linestring, polygon`,
+          `request/query/filter/geometry_type must be equal to one of the allowed values: point, linestring, polygon`,
         ],
-        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request.query.filter.layer_id should be number`],
-        [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request.query.filter.exclusive_from should match format "date-time"`],
-        [generateFakePrivateFilter({ to: faker.random.word() }), `request.query.filter.to should match format "date-time"`],
-        [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request.query.filter.is_hidden should be boolean`],
+        [generateFakePrivateFilter({ layerId: faker.random.word() as unknown as number }), `request/query/filter/layer_id must be number`],
+        [generateFakePrivateFilter({ exclusiveFrom: faker.random.word() }), `request/query/filter/exclusive_from must match format "date-time"`],
+        [generateFakePrivateFilter({ to: faker.random.word() }), `request/query/filter/to must match format "date-time"`],
+        [generateFakePrivateFilter({ isHidden: faker.random.word() as unknown as boolean }), `request/query/filter/is_hidden must be boolean`],
       ])(
         'should return 400 status code if the filter has an invalid query parameter',
         async function (filter: BaseReplicaFilter, bodyMessage: string) {
@@ -975,21 +971,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const findOneReplicaWithFilesMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findOneReplicaWithFiles: findOneReplicaWithFilesMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findOneReplicaWithFiles: findOneReplicaWithFilesMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicaById(faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -997,21 +989,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const findLatestReplicaWithFilesMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findLatestReplicaWithFiles: findLatestReplicaWithFilesMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findLatestReplicaWithFiles: findLatestReplicaWithFilesMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getLatestReplica(generateFakeBaseFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1019,21 +1007,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const findReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findReplicas: findReplicasMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findReplicas: findReplicasMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.getReplicas(generateFakePublicFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1047,21 +1031,17 @@ describe('replica', function () {
           token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
           provider: { useValue: { findOneReplica: findOneReplicaMock } },
         });
-        mockRegisterOptions.override.push(
-          {
-            token: FILE_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: FILE_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { findOneFile: findOneFileMock, createFileOnReplica: createFileOnReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.postFile(faker.datatype.uuid(), faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1070,21 +1050,17 @@ describe('replica', function () {
         const createReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const findOneReplicaMock = jest.fn().mockResolvedValue(false);
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { createReplica: createReplicaMock, findOneReplica: findOneReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { createReplica: createReplicaMock, findOneReplica: findOneReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.postReplica(generateFakeReplica());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1093,21 +1069,17 @@ describe('replica', function () {
         const updateOneReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const findOneReplicaMock = jest.fn().mockResolvedValue(true);
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { updateOneReplica: updateOneReplicaMock, findOneReplica: findOneReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { updateOneReplica: updateOneReplicaMock, findOneReplica: findOneReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.patchReplica(faker.datatype.uuid(), generateFakeReplicaUpdate());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1115,21 +1087,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const updateReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { updateReplicas: updateReplicasMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { updateReplicas: updateReplicasMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.patchReplicas(generateFakePrivateFilter(), generateFakeReplicaUpdate());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1137,21 +1105,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const deleteOneReplicaMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { deleteOneReplica: deleteOneReplicaMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { deleteOneReplica: deleteOneReplicaMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.deleteReplica(faker.datatype.uuid());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
 
@@ -1159,21 +1123,17 @@ describe('replica', function () {
       it('should return 500 if the db throws an error', async function () {
         const deleteReplicasMock = jest.fn().mockRejectedValue(new QueryFailedError('select *', [], new Error('failed')));
         const mockRegisterOptions = getBaseRegisterOptions();
-        mockRegisterOptions.override.push(
-          {
-            token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
-            provider: { useValue: { deleteReplicas: deleteReplicasMock } },
-          },
-          {
-            token: DATA_SOURCE_PROVIDER,
-            provider: { useValue: connection },
-          }
-        );
-        const [, mockApp] = await getApp(mockRegisterOptions);
+        mockRegisterOptions.override.push({
+          token: REPLICA_CUSTOM_REPOSITORY_SYMBOL,
+          provider: { useValue: { deleteReplicas: deleteReplicasMock } },
+        });
+        const [mockApp, , cleanup] = await getMockApp(mockRegisterOptions);
         mockReplicaRequestSender = new ReplicaRequestSender(mockApp);
         const response = await mockReplicaRequestSender.deleteReplicas(generateFakePrivateFilter());
         expect(response.status).toBe(httpStatusCodes.INTERNAL_SERVER_ERROR);
         expect(response.body).toHaveProperty('message', 'failed');
+
+        await cleanup();
       });
     });
   });

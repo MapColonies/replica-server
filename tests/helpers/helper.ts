@@ -19,7 +19,7 @@ const generateFakeLayer = (): Layer => {
 };
 
 export const generateFakeLayers = (): Layer[] => {
-  const layers = [];
+  const layers: Layer[] = [];
   const amount = faker.datatype.number({ min: 1, max: 10 });
   for (let i = 0; i < amount; i++) {
     layers.push(generateFakeLayer());
@@ -43,7 +43,7 @@ export const generateFakeReplicaUpdate = (params: StringifiedReplicaUpdate = {})
 };
 
 export const generateMockObjectStorageConfig = (includeProjectId = false): IObjectStorageConfig => {
-  const objectStorageConfig: IObjectStorageConfig = { protocol: 'http', host: 'some_storage_host', port: '9000' };
+  const objectStorageConfig: IObjectStorageConfig = { protocol: 'http', host: 'some_storage_host', port: 9000 };
   if (includeProjectId) {
     objectStorageConfig.projectId = 'some_project_id';
   }
@@ -66,7 +66,7 @@ export const generateFakeReplicaWithFiles = (
 ): { replica: StringifiedReplica & { files: File[] }; fileIds: string[] } => {
   const replica = generateFakeReplica(params);
   const amount = params.amount ?? faker.datatype.number({ min: 1, max: 10 });
-  const files = [];
+  const files: File[] = [];
   for (let i = 0; i < amount; i++) {
     files.push({ replicaId: replica.replicaId, fileId: faker.datatype.uuid() });
   }
