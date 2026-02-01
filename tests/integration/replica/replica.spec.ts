@@ -20,6 +20,7 @@ import { BUCKET_NAME_MAX_LENGTH_LIMIT, BUCKET_NAME_MIN_LENGTH_LIMIT, SERVICES } 
 import { GeometryType, ReplicaType } from '../../../src/common/enums';
 import { BaseReplicaFilter } from '../../../src/replica/models/replicaFilter';
 import { SortFilter } from '../../../src/common/types';
+import { Replica } from '../../../src/replica/DAL/typeorm/replica';
 import {
   generateFakeBaseFilter,
   generateFakePrivateFilter,
@@ -51,7 +52,7 @@ describe('replica', function () {
     [app, container] = await getApp(registerOptions);
 
     const replicaRepository = container.resolve<ReplicaRepository>(REPLICA_CUSTOM_REPOSITORY_SYMBOL);
-    await replicaRepository.delete({});
+    await replicaRepository.manager.createQueryBuilder().delete().from(Replica).execute();
     requestSender = new ReplicaRequestSender(app);
   }, BEFORE_ALL_TIMEOUT);
 
