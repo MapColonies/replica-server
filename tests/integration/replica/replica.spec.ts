@@ -1,6 +1,6 @@
 import httpStatusCodes, { StatusCodes } from 'http-status-codes';
 import { DependencyContainer } from 'tsyringe';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { QueryFailedError } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { Application } from 'express';
