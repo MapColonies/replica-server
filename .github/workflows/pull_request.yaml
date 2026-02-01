@@ -1,6 +1,10 @@
 name: pull_request
 
-on: [pull_request]
+on: [pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 env:
   DB_HOST: localhost
@@ -12,45 +16,43 @@ env:
 
 jobs:
   eslint:
-    name: Run eslint
+    name: Run Linters
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+    strategy:
+      matrix:
+        node: [20.x, 22.x]
 
-      - name: Set up Node.js
-        uses: ./.github/actions/init-npm
+    steps:
+      - name: Check out TS Project Git repository
+        uses: actions/checkout@v5
+
+      - name: Init Nodejs
+        uses: MapColonies/shared-workflows/actions/init-npm@init-npm-v1
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linters
+      - name: Run TS Project linters
         uses: wearerequired/lint-action@v2
         with:
-          github_token: ${{ secrets.github_token }}
-          # Enable linters
           eslint: true
           prettier: true
           eslint_extensions: ts
+          tsc: true
+
+  openapi-lint:
+    name: Run OpenAPI lint Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out TS Project Git repository
+        uses: actions/checkout@v5
+
+      - name: Init Nodejs
+        uses: MapColonies/shared-workflows/actions/init-npm@init-npm-v1
 
       - name: OpenAPI Lint Checks
-        uses: nwestfall/openapi-action@v1.0.2
-        with:
-         github_token: ${{ secrets.GITHUB_TOKEN }}
-         file: ./openapi3.yaml
-
-  security:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Run Snyk to check for vulnerabilities
-      uses: snyk/actions/node@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: npx @redocly/cli lint --format=github-actions openapi3.yaml
 
   tests:
     name: Run Tests
@@ -81,15 +83,12 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up Node.js
-        uses: ./.github/actions/init-npm
+      - name: Init Nodejs
+        uses: MapColonies/shared-workflows/actions/init-npm@init-npm-v1
         with:
           node-version: ${{ matrix.node }}
-
-      - name: Install Node.js dependencies
-        run: npm ci
 
       - name: Install pg client
         run: |
@@ -117,16 +116,31 @@ jobs:
           name: Test Reporters Node-${{ matrix.node }}
           path: reports/**
 
-  build_image:
-    name: Build Image
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  build_docker_image:
+    name: Build Docker Image
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v6
 
-      - name: build Docker image
-        run: docker build -t test-build:latest .
+  build_docker_migrations_image:
+    name: Build Docker Migrations Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out TS Project Git repository
+        uses: actions/checkout@v5
 
       - name: build migrations Docker image
         run: docker build -f ./migrations.Dockerfile -t test-migrations-build:latest .
